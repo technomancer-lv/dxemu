@@ -5,7 +5,9 @@
 *	F_CLK:
 *
 *	Fuses:
-* 
+* 	
+*	Pin naming is taken from KR1801VP1-033 interface pin naming.
+*
 * 	PUSK - visiem procesiem kopeejs kaa saakuma pulss
 * 	Peec PUSK sanjemshanas deaktivizee ZAVERSHENO un
 * 	ieshifto iekshaa komandas baitu (8 biti)
@@ -22,58 +24,57 @@
 #include <util/delay.h>
 
 //Nach. ustanovka (IN)
-#define	DxResetPort	PORTD
-#define	DxResetIn	PIND
-#define	DxResetDdr	DDRD
-#define	DxResetPin	3
+#define	DxSetPort	PORTD
+#define	DxSetIn		PIND
+#define	DxSetDdr	DDRD
+#define	DxSetPin	3
 
 //Pusk (IN)
-#define	DxGoPort	PORTD
-#define	DxGoIn		PIND
-#define	DxGoDdr		DDRD
-#define	DxGoPin		2
+#define	DxRunPort	PORTD
+#define	DxRunIn		PIND
+#define	DxRunDdr	DDRD
+#define	DxRunPin	2
 
 //Dannie (I)
-#define	DxDataInPort	PORTC
-#define	DxDataInIn	PINC
-#define	DxDataInDdr	DDRC
-#define	DxDataInPin	1
+#define	DxDiPort	PORTC
+#define	DxDiIn		PINC
+#define	DxDiDdr		DDRC
+#define	DxDiPin		1
 
 //Dannie (O)
-#define	DxDataOutPort	PORTC
-#define	DxDataOutIn	PINC
-#define	DxDataOutDdr	DDRC
-#define	DxDataOutPin	0
+#define	DxDoPort	PORTC
+#define	DxDoIn		PINC
+#define	DxDoDdr		DDRC
+#define	DxDoPin		0
 
 //Treb. peredachi (OUT)
-#define	DxRtsPort	PORTC
-#define	DxRtsIn		PINC
-#define	DxRtsDdr	DDRC
-#define	DxRtsPin	5
+#define	DxIrPort	PORTC
+#define	DxIrIn		PINC
+#define	DxIrDdr	DDRC
+#define	DxIrPin	5
 
 //Zaversheno (OUT)
-#define	DxFinishedPort	PORTC
-#define	DxFinishedIn	PINC
-#define	DxFinishedDdr	DDRC
-#define	DxFinishedPin	2
+#define	DxDonePort	PORTC
+#define	DxDoneIn	PINC
+#define	DxDoneDdr	DDRC
+#define	DxDonePin	2
 
 //Vivod (OUT)
-#define	DxOutputPort	PORTC
-#define	DxOutputIn	PINC
-#define	DxOutputDdr	DDRC
-#define	DxOutputPin	3
+#define	DxOutPort	PORTC
+#define	DxOutIn	PINC
+#define	DxOutDdr	DDRC
+#define	DxOutPin	3
 
 //Oshibka (OUT)
-#define	DxErrorPort	PORTC
-#define	DxErrorIn	PINC
-#define	DxErrorDdr	DDRC
-#define	DxErrorPin	4
-
+#define	DxErrPort	PORTC
+#define	DxErrIn	PINC
+#define	DxErrDdr	DDRC
+#define	DxErrPin	4
 //Sdvig (OUT)
-#define	DxShiftPort	PORTD
-#define	DxShiftIn	PIND
-#define	DxShiftDdr	DDRD
-#define	DxShiftPin	4
+#define	DxShftPort	PORTD
+#define	DxShftIn	PIND
+#define	DxShftDdr	DDRD
+#define	DxShftPin	4
 
 //Variables
 unsigned char	DxStatus=0;
@@ -94,52 +95,56 @@ int main()
 	//INIT
 	//port init
 	//DX NACH.UST.  - input, pulled high
-	DxResetPort|=(1<<DxResetPin);
-	DxResetDdr&=~(1<<DxResetPin);
+	DxSetPort|=(1<<DxSetPin);
+	DxSetDdr&=~(1<<DxSetPin);
 
 	//DX PUSK  - input, pulled high
-	DxGoPort|=(1<<DxGoPin);
-	DxGoDdr&=~(1<<DxGoPin);
+	DxRunPort|=(1<<DxRunPin);
+	DxRunDdr&=~(1<<DxRunPin);
 
 	//DX data in  - input, pulled high
-	DxDataInPort|=(1<<DxDataInPin);
-	DxDataInDdr&=~(1<<DxDataInPin);
+	DxDiPort|=(1<<DxDiPin);
+	DxDiDdr&=~(1<<DxDiPin);
 
 	//DX data out pin - output, high
-	DxDataOutPort|=(1<<DxDataOutPin);
-	DxDataOutDdr|=(1<<DxDataOutPin);
+	DxDoPort|=(1<<DxDoPin);
+	DxDoDdr|=(1<<DxDoPin);
 
 	//DX TREB.PER.  - output, high
-	DxRtsPort|=(1<<DxRtsPin);
-	DxRtsDdr|=(1<<DxRtsPin);
+	DxIrPort|=(1<<DxIrPin);
+	DxIrDdr|=(1<<DxIrPin);
 
 	//DX ZAVERSHENO  - output, high
-	DxFinishedPort|=(1<<DxFinishedPin);
-	DxFinishedDdr|=(1<<DxFinishedPin);
+	DxDonePort|=(1<<DxDonePin);
+	DxDoneDdr|=(1<<DxDonePin);
 
 	//DX VYVOD  - output, high
-	DxOutputPort|=(1<<DxOutputPin);
-	DxOutputDdr|=(1<<DxOutputPin);
+	DxOutPort|=(1<<DxOutPin);
+	DxOutDdr|=(1<<DxOutPin);
 
 	//DX OSHIBKA  - output, high
-	DxErrorPort|=(1<<DxErrorPin);
-	DxErrorDdr|=(1<<DxErrorPin);
+	DxErrPort|=(1<<DxErrPin);
+	DxErrDdr|=(1<<DxErrPin);
 
 	//DX TREB.PER.  - output, high
-	DxShiftPort|=(1<<DxShiftPin);
-	DxShiftDdr|=(1<<DxShiftPin);
+	DxShftPort|=(1<<DxShftPin);
+	DxShftDdr|=(1<<DxShftPin);
 
 
 	//UART init
 	//SPI-mem init
 	//SPI-DX init	
 
+
+
+	_delay_ms(1000);	//Startup delay
+
 	//========== MAIN LOOP ==========
 	while(1)
 	{
-		DxFinishedPort&=~(1<<DxFinishedPin);
+		DxDonePort&=~(1<<DxDonePin);
 
-		if ((DxGoIn&(1<<DxGoPin))==0)
+		if ((DxRunIn&(1<<DxRunPin))==0)
 		{
 			//Controller has initiated command transfer. Read command over SPI-DX.
 			DxFinishedPort|=(1<<DxFinishedPin);
