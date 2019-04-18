@@ -27,13 +27,13 @@
 #define	DxSetPort	PORTD
 #define	DxSetIn		PIND
 #define	DxSetDdr	DDRD
-#define	DxSetPin	3
+#define	DxSetPin	2
 
 //Pusk (IN)
 #define	DxRunPort	PORTD
 #define	DxRunIn		PIND
 #define	DxRunDdr	DDRD
-#define	DxRunPin	2
+#define	DxRunPin	3
 
 //Dannie (I)
 #define	DxDiPort	PORTC
@@ -108,8 +108,8 @@ int main()
 	DxDiPort|=(1<<DxDiPin);
 	DxDiDdr&=~(1<<DxDiPin);
 
-	//DX data out pin - output, low
-	DxDoPort&=~(1<<DxDoPin);
+	//DX data out pin - output, high (pulled high on bidir line in computer)
+	DxDoPort|=(1<<DxDoPin);
 	DxDoDdr|=(1<<DxDoPin);
 
 	//DX IR (TREB.PEREDACHI).  - output, high
@@ -144,8 +144,6 @@ int main()
 
 	//========== MAIN LOOP ==========
 
-	while (1)
-	{}
 
 	while(1)
 	{
@@ -157,12 +155,12 @@ int main()
 			//Read 8 bits
 			for (unsigned char i=0;i<8;i++)
 			{
-				_delay_us(1);
+				_delay_us(3);
 				DxShftPort&=~(1<<DxShftPin);
-				_delay_us(2);
+				_delay_us(1);
 				DxShftPort|=(1<<DxShftPin);
 			}
-			
+
 			switch (DxCommand)
 			{
 				case 0:	//Fill buffer command
