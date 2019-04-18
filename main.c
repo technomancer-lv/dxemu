@@ -7,6 +7,8 @@
 *	Fuses:
 * 	
 *	Pin naming is taken from KR1801VP1-033 interface pin naming.
+*	Data is shifted MSB first
+*	Command and both addresses are 9-bit long with parity bit as LSB
 *
 * 	PUSK - visiem procesiem kopeejs kaa saakuma pulss
 * 	Peec PUSK sanjemshanas deaktivizee ZAVERSHENO un
@@ -50,8 +52,8 @@
 //Treb. peredachi (OUT)
 #define	DxIrPort	PORTC
 #define	DxIrIn		PINC
-#define	DxIrDdr	DDRC
-#define	DxIrPin	5
+#define	DxIrDdr		DDRC
+#define	DxIrPin		5
 
 //Zaversheno (OUT)
 #define	DxDonePort	PORTC
@@ -61,13 +63,13 @@
 
 //Vivod (OUT)
 #define	DxOutPort	PORTC
-#define	DxOutIn	PINC
+#define	DxOutIn		PINC
 #define	DxOutDdr	DDRC
 #define	DxOutPin	3
 
 //Oshibka (OUT)
 #define	DxErrPort	PORTC
-#define	DxErrIn	PINC
+#define	DxErrIn		PINC
 #define	DxErrDdr	DDRC
 #define	DxErrPin	4
 //Sdvig (OUT)
@@ -82,12 +84,27 @@ unsigned char	DxStatus=0;
 		
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
-unsigned char	DxCommand=0;		//DX command received from controller. Used in state machine
-unsigned char	DxState=0;		//State machine state
+unsigned char	SecAddr=0;		//Sector address received from controller
+unsigned char	TrackAddr=0;		//Track address received from controller
+
+unsigned char	DxCommand=0xFF;		//DX command received from controller. Used in state machine
+#define	NoCommand	0xFF		//If no command is being executed at the moment, DxCommand=0xFF
+
+unsigned char	DxState=0;			//State machine state variable
+#define	IdleState		0		//Idle state - no command are being executed
+#define	SecAddrWaitState	1		//Waits for sector address (Commands 2,3,6)
+#define	TrackAddrWaitState	2		//Waits for track address (Commands 2,3,6)
 
 //Functions
-unsigned char 	RomRead(unsigned char TrkNum,unsigned char SecNum);
-unsigned char 	RomWrite(unsigned char TrkNum,unsigned char SecNum);
+unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
+							//from the controller. 0xFF - parity error
+unsigned int	ShiftIn(void);				//Function for shifting in data from controller with no parity
+
+void		ShiftOut(unsigned char ShiftByte);	//Function for shifting out data to controller
+
+unsigned char 	RomRead(unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector ro flash memory
+unsigned char 	RomWrite(unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
+
 
 
 
@@ -137,28 +154,27 @@ int main()
 	//SPI-mem init
 	//SPI-DX init
 
-
-
 	_delay_ms(1000);		//Startup delay
-	DxDonePort&=~(1<<DxDonePin);	//
+	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
 
 	//========== MAIN LOOP ==========
-
 
 	while(1)
 	{
 		if ((DxRunIn&(1<<DxRunPin))==0)
 		{
-			//Controller has initiated command transfer. Read command over SPI-DX.
-			DxDonePort|=(1<<DxDonePin);
-
-			//Read 8 bits
-			for (unsigned char i=0;i<8;i++)
+			if(DxCommand==NoCommand)
 			{
-				_delay_us(3);
-				DxShftPort&=~(1<<DxShftPin);
-				_delay_us(1);
-				DxShftPort|=(1<<DxShftPin);
+				//Controller has initiated command transfer. Read command over SPI-DX.
+				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
+
+				//Read 8 bits
+
+				unsigned int CommandTemp=ShiftInP();
+
+				//Parity test goes here
+
+				DxCommand=(CommandTemp&7);
 			}
 
 			switch (DxCommand)
@@ -166,43 +182,84 @@ int main()
 				case 0:	//Fill buffer command
 				{
 					
+					break;
 				}
-				
+
 				case 1:	//Read buffer command
 				{
 					
+					break;
 				}
-				
+
 				case 2:	//Write sector to disk command
+				case 3:	//Read sector from disk command
+				case 6:	//Write marked sector to disk command
+				{
+					if(DxState==IdleState)
+					{
+						DxState=SecAddrWaitState;
+						break;
+					}
+					if(DxState==SecAddrWaitState)
+					{
+						unsigned int	SectorTemp=ShiftIn(8);
+						//Parity test goes here
+						SecAddr=
+					}
+					break;
+				}
+
+				case 4:	//Unused
 				{
 					
+					break;
 				}
-				
-				case 3:	//Write marked sector to disk command
-				{
-					
-				}
-				
-				case 4:	//Read sector from disk command
-				{
-					
-				}
-				
+
 				case 5:	//Read error and status register command
 				{
 					
+					break;
 				}
-				
-				case 6:	//Read disk error register command
+
+				case 7:	//Read disk error register command
 				{
 					
+					break;
 				}
-				
-				
-				
+
+				default:
+				{
+					DxCommand=NoCommand;
+					DxState=IdleState;
+					break;
+				}
 			}
 		}
 	}
+}
+
+unsigned int	ShiftInP(void)		//Function for shifting in data from controller
+{
+	unsigned int ShiftData=0;
+	if((DxDiIn&(1<<DxDiPin))==0)	//Read data is inverted
+		ShiftData=1;
+
+	for(;ShiftCount>0;ShiftCount--)
+	{
+		DxShftPort&=~(1<<DxShftPin);
+		_delay_us(1);
+		DxShftPort|=(1<<DxShftPin);
+		_delay_us(2);
+		if((DxDiIn&(1<<DxDiPin))==0)
+			ShiftData+=1;
+	}
+	return ShiftData>>1;
+}
+
+
+void		ShiftOut(unsigned char ShiftByte)	//Function for shifting out data to controller
+{
+
 }
 
 
