@@ -165,13 +165,12 @@ int main()
 	//UART init
 	UartTxDdr|=(1<<UartTxPin);
 	UCSR0A=0b00000010;
-	UCSR0B=0b00011000;
-	UCSR0C=0b00000110;
+	UCSR0B=0b00011000;	//Tx enabled, RX enabled
+	UCSR0C=0b00000110;	//
 	UBRR0H=0;
 	UBRR0L=15;		//115200 8N1
 
 	//SPI-mem init
-	//SPI-DX init
 
 	_delay_ms(1000);		//Startup delay
 	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
@@ -184,7 +183,7 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
-				UartSend('C');
+			//	UartSend('C');
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
 				DxErrPort|=(1<<DxErrPin);	//Clears error signal
@@ -195,9 +194,9 @@ int main()
 				//TO DO - parity test goes here
 				DxCommand=((CommandTemp>>1)&7);
 				//TO DO - drive select goes here
-				UartSend(DxCommand+0x30);
-				UartSend(0x0A);
-				UartSend(0x0D);
+			//	UartSend(DxCommand+0x30);
+			//	UartSend(0x0A);
+			//	UartSend(0x0D);
 			}
 
 			switch (DxCommand)
@@ -214,7 +213,7 @@ int main()
 					{
 						DxArray[DxArrayPointer]=ShiftIn();
 						DxArrayPointer++;
-						UartSend((DxArrayPointer&7)+0x30);
+				//		UartSend((DxArrayPointer&7)+0x30);
 						if(DxArrayPointer==128)
 							ExitState();
 						else
@@ -227,12 +226,13 @@ int main()
 				{
 					if(DxState==IdleState)
 					{
+					//TO DO - merge with else
 						DxState=ReadBufferState;
 						DxOutPort&=~(1<<DxOutPin);
 						_delay_us(10);
 						ShiftOut(DxArray[0]);
 						DxArrayPointer=1;
-						UartSend('T');
+				//		UartSend('T');
 						DxIrPort&=~(1<<DxIrPin);
 					}
 					else
@@ -241,7 +241,7 @@ int main()
 						ShiftOut(DxArray[DxArrayPointer]);
 						//ShiftOut(DxArrayPointer);
 						DxArrayPointer++;
-						UartSend('T');
+				//		UartSend('T');
 						if(DxArrayPointer==128)
 							ExitState();
 						else
@@ -269,10 +269,10 @@ int main()
 						DxState=TrackAddrWaitState;
 						DxIrPort&=~(1<<DxIrPin);
 						//TO DO - exit if parity error
-						UartSend('S');
-						UartSend(SecAddr+0x30);
-						UartSend(0x0A);
-						UartSend(0x0D);
+				//		UartSend('S');
+				//		UartSend(SecAddr+0x30);
+				//		UartSend(0x0A);
+				//		UartSend(0x0D);
 
 					}
 					if(DxState==TrackAddrWaitState)
@@ -282,10 +282,44 @@ int main()
 						//TO DO - parity test and exit
 						TrackAddr=TrackTemp;
 						//TO DO - write or read sector here
-						UartSend('T');
-						UartSend(TrackAddr+0x30);
-						UartSend(0x0A);
-						UartSend(0x0D);
+				//		UartSend('T');
+				//		UartSend(TrackAddr+0x30);
+				//		UartSend(0x0A);
+				//		UartSend(0x0D);
+
+						switch (DxCommand)
+						{
+							case 2:
+							case 6:
+							{
+							UartSend('W');
+							UartSend(SecAddr);
+							UartSend(TrackAddr);
+
+							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
+								UartSend(DxArray[DxArrayPointer]);
+							_delay_ms(500);
+
+							break;
+							}
+
+							case 3:
+							{
+							UartSend('R');
+							UartSend(SecAddr);
+							UartSend(TrackAddr);
+
+							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
+							{
+								while((UCSR0A&0b10000000)==0);
+								DxArray[DxArrayPointer]=UDR0;
+							}
+							_delay_ms(500);
+
+							break;
+							}
+
+						}
 
 						ExitState();
 
@@ -301,13 +335,27 @@ int main()
 
 				case 5:	//Read error and status register command
 				{
-					
+					DxOutPort&=~(1<<DxOutPin);
+					_delay_us(10);
+					ShiftOut(0b10000100);
+				//	UartSend('S');
+				//	UartSend('E');
+				//	UartSend(0x0D);
+				//	UartSend(0x0A);
+					ExitState();
 					break;
 				}
 
 				case 7:	//Read disk error register command
 				{
-					
+					DxOutPort&=~(1<<DxOutPin);
+					_delay_us(10);
+					ShiftOut(0b00000000);
+				//	UartSend('S');
+				//	UartSend('D');
+				//	UartSend(0x0D);
+				//	UartSend(0x0A);
+					ExitState();
 					break;
 				}
 
@@ -397,10 +445,10 @@ void	ExitState(void)
 	DxOutPort|=(1<<DxOutPin);
 	DxCommand=NoCommand;
 	DxState=IdleState;
-	UartSend('E');
-	UartSend('x');
-	UartSend(0x0A);
-	UartSend(0x0D);
+//	UartSend('E');
+//	UartSend('x');
+//	UartSend(0x0A);
+//	UartSend(0x0D);
 
 }
 
