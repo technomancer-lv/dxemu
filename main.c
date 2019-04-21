@@ -314,7 +314,7 @@ int main()
 
 							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
 								UartSend(DxArray[DxArrayPointer]);
-							//_delay_ms(500);
+							_delay_ms(500);
 
 							break;
 							}
@@ -330,7 +330,7 @@ int main()
 								while((UCSR0A&0b10000000)==0);
 								DxArray[DxArrayPointer]=UDR0;
 							}
-							_delay_ms(100);
+							_delay_ms(500);
 
 							break;
 							}
@@ -463,11 +463,6 @@ void	ExitState(void)
 	DxCommand=NoCommand;
 	DxState=IdleState;
 	DxArrayPointer=0;
-//	UartSend('E');
-//	UartSend('x');
-//	UartSend(0x0A);
-//	UartSend(0x0D);
-
 }
 
 void	UartSend(unsigned char UartData)		//Function for debug data sending to PC
