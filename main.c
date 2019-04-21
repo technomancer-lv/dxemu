@@ -173,7 +173,8 @@ int main()
 	UCSR0B=0b00011000;	//Tx enabled, RX enabled
 	UCSR0C=0b00000110;	//
 	UBRR0H=0;
-	UBRR0L=15;		//115200 8N1
+//	UBRR0L=15;		//115200 8N1
+	UBRR0L=191;		//9600 8N1
 
 	//SPI-mem init
 
@@ -213,8 +214,10 @@ int main()
 					}
 					else				//Receive 128 bytes from controller
 					{
+					//	UartSend('T');
 						DxArray[DxArrayPointer]=ShiftIn();
 						DxArrayPointer++;
+
 						if(DxArrayPointer==128)
 							ExitState();
 						else
@@ -327,7 +330,7 @@ int main()
 								while((UCSR0A&0b10000000)==0);
 								DxArray[DxArrayPointer]=UDR0;
 							}
-							_delay_ms(1000);
+							_delay_ms(100);
 
 							break;
 							}
