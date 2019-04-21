@@ -88,8 +88,7 @@
 #define	UartTxPin	1
 
 //Variables
-unsigned char	DxStatus=0;
-#define	DxDriveSelected	0
+unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 		
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
@@ -105,6 +104,12 @@ unsigned char	DxState=0;			//State machine state variable
 #define	TrackAddrWaitState	2		//Waits for track address (Commands 2,3,6)
 #define	FillBufferState		3
 #define	ReadBufferState		4
+
+unsigned char	DxStatusReg=0b10000100;
+#define	DxParityErrorBit	1
+#define	DxMarkedSectorActionBit	6
+
+unsigned char	DxErrorReg=0;
 
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
@@ -183,20 +188,17 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
-			//	UartSend('C');
+				UartSend('C');
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
 				DxErrPort|=(1<<DxErrPin);	//Clears error signal
 
 				//Read command
-				unsigned int CommandTemp=ShiftInP();
-
+				unsigned char CommandTemp=ShiftInP();
 				//TO DO - parity test goes here
+				DxDriveSelected=(CommandTemp>>4);
 				DxCommand=((CommandTemp>>1)&7);
-				//TO DO - drive select goes here
-			//	UartSend(DxCommand+0x30);
-			//	UartSend(0x0A);
-			//	UartSend(0x0D);
+				UartSend(DxCommand+0x30);	//Debug
 			}
 
 			switch (DxCommand)
@@ -263,29 +265,29 @@ int main()
 					if(DxState==SecAddrWaitState)
 					{
 						unsigned int	SectorTemp=ShiftInP();
-						//TO DO - test sector max value
 						//TO DO - parity test
 						SecAddr=SectorTemp;
+						if (SecAddr>26)
+						{
+							DxErrPort&=~(1<<DxErrPin);
+							//TO DO - add error variable
+						}
 						DxState=TrackAddrWaitState;
 						DxIrPort&=~(1<<DxIrPin);
-						//TO DO - exit if parity error
-				//		UartSend('S');
-				//		UartSend(SecAddr+0x30);
-				//		UartSend(0x0A);
-				//		UartSend(0x0D);
+						//TO DO - error if parity error
 
 					}
 					if(DxState==TrackAddrWaitState)
 					{
 						unsigned int	TrackTemp=ShiftInP();
-						//TO DO - test sector max value
 						//TO DO - parity test and exit
 						TrackAddr=TrackTemp;
-						//TO DO - write or read sector here
-				//		UartSend('T');
-				//		UartSend(TrackAddr+0x30);
-				//		UartSend(0x0A);
-				//		UartSend(0x0D);
+						if (TrackAddr>76)
+						{
+							DxErrPort&=~(1<<DxErrPin);
+							//TO DO - add error variable
+						}
+				//TO DO - write or read sector here
 
 						switch (DxCommand)
 						{
@@ -298,7 +300,7 @@ int main()
 
 							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
 								UartSend(DxArray[DxArrayPointer]);
-							_delay_ms(500);
+							//_delay_ms(500);
 
 							break;
 							}
@@ -314,7 +316,7 @@ int main()
 								while((UCSR0A&0b10000000)==0);
 								DxArray[DxArrayPointer]=UDR0;
 							}
-							_delay_ms(500);
+							//_delay_ms(100);
 
 							break;
 							}
@@ -329,7 +331,6 @@ int main()
 
 				case 4:	//Unused
 				{
-					
 					break;
 				}
 
@@ -337,7 +338,7 @@ int main()
 				{
 					DxOutPort&=~(1<<DxOutPin);
 					_delay_us(10);
-					ShiftOut(0b10000100);
+					ShiftOut(DxStatusReg);
 				//	UartSend('S');
 				//	UartSend('E');
 				//	UartSend(0x0D);
@@ -350,7 +351,7 @@ int main()
 				{
 					DxOutPort&=~(1<<DxOutPin);
 					_delay_us(10);
-					ShiftOut(0b00000000);
+					ShiftOut(DxErrorReg);
 				//	UartSend('S');
 				//	UartSend('D');
 				//	UartSend(0x0D);
@@ -365,6 +366,15 @@ int main()
 					break;
 				}
 			}
+		}
+		if((DxSetIn&(1<<DxSetPin))==0)
+		{
+			DxDonePort|=(1<<DxDonePin);
+			_delay_ms(1000);
+			DxOutPort&=~(1<<DxOutPin);
+			_delay_us(10);
+			ShiftOut(0b10000100);
+			ExitState();
 		}
 	}
 }
