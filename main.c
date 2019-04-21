@@ -188,34 +188,33 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
-				UartSend('C');
+				UartSend('C');				//Debug
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
 				DxErrPort|=(1<<DxErrPin);	//Clears error signal
 
-				//Read command
+				//Read command - shift in from controller
 				unsigned char CommandTemp=ShiftInP();
 				//TO DO - parity test goes here
-				DxDriveSelected=(CommandTemp>>4);
-				DxCommand=((CommandTemp>>1)&7);
-				UartSend(DxCommand+0x30);	//Debug
+				DxDriveSelected=(CommandTemp>>4);	//Saves selected drive
+				DxCommand=((CommandTemp>>1)&7);		//Saves command
+				UartSend(DxCommand+0x30);		//Debug
 			}
 
 			switch (DxCommand)
 			{
 				case 0:	//Fill buffer command
 				{
-					if(DxState==IdleState)
+					if(DxState==IdleState)		//Command received, initialise receive
 					{
 						DxState=FillBufferState;
 						DxIrPort&=~(1<<DxIrPin);
 						DxArrayPointer=0;
 					}
-					else
+					else				//Receive 128 bytes from controller
 					{
 						DxArray[DxArrayPointer]=ShiftIn();
 						DxArrayPointer++;
-				//		UartSend((DxArrayPointer&7)+0x30);
 						if(DxArrayPointer==128)
 							ExitState();
 						else
@@ -226,28 +225,35 @@ int main()
 
 				case 1:	//Read buffer command
 				{
+					if(DxArrayPointer<128)
+					{
 					if(DxState==IdleState)
 					{
 					//TO DO - merge with else
 						DxState=ReadBufferState;
 						DxOutPort&=~(1<<DxOutPin);
 						_delay_us(10);
+					//	UartSend('T');
 						ShiftOut(DxArray[0]);
 						DxArrayPointer=1;
-				//		UartSend('T');
 						DxIrPort&=~(1<<DxIrPin);
 					}
 					else
 					{
 						DxIrPort|=(1<<DxIrPin);
+					//	UartSend('T');
 						ShiftOut(DxArray[DxArrayPointer]);
-						//ShiftOut(DxArrayPointer);
 						DxArrayPointer++;
-				//		UartSend('T');
-						if(DxArrayPointer==128)
-							ExitState();
-						else
+					//	if(DxArrayPointer==128)
+					//		ExitState();
+					//	else
 							DxIrPort&=~(1<<DxIrPin);
+					}
+					}
+					else
+					{
+						DxIrPort|=(1<<DxIrPin);
+						ExitState();
 					}
 					break;
 				}
@@ -270,10 +276,13 @@ int main()
 						if (SecAddr>26)
 						{
 							DxErrPort&=~(1<<DxErrPin);
+							ExitState();
+							break;
 							//TO DO - add error variable
 						}
 						DxState=TrackAddrWaitState;
 						DxIrPort&=~(1<<DxIrPin);
+						break;
 						//TO DO - error if parity error
 
 					}
@@ -285,6 +294,8 @@ int main()
 						if (TrackAddr>76)
 						{
 							DxErrPort&=~(1<<DxErrPin);
+							ExitState();
+							break;
 							//TO DO - add error variable
 						}
 				//TO DO - write or read sector here
@@ -316,7 +327,7 @@ int main()
 								while((UCSR0A&0b10000000)==0);
 								DxArray[DxArrayPointer]=UDR0;
 							}
-							//_delay_ms(100);
+							_delay_ms(1000);
 
 							break;
 							}
@@ -339,10 +350,6 @@ int main()
 					DxOutPort&=~(1<<DxOutPin);
 					_delay_us(10);
 					ShiftOut(DxStatusReg);
-				//	UartSend('S');
-				//	UartSend('E');
-				//	UartSend(0x0D);
-				//	UartSend(0x0A);
 					ExitState();
 					break;
 				}
@@ -352,10 +359,6 @@ int main()
 					DxOutPort&=~(1<<DxOutPin);
 					_delay_us(10);
 					ShiftOut(DxErrorReg);
-				//	UartSend('S');
-				//	UartSend('D');
-				//	UartSend(0x0D);
-				//	UartSend(0x0A);
 					ExitState();
 					break;
 				}
@@ -369,6 +372,7 @@ int main()
 		}
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
+			//TO DO - fill buffer with sector 0
 			DxDonePort|=(1<<DxDonePin);
 			_delay_ms(1000);
 			DxOutPort&=~(1<<DxOutPin);
@@ -455,6 +459,7 @@ void	ExitState(void)
 	DxOutPort|=(1<<DxOutPin);
 	DxCommand=NoCommand;
 	DxState=IdleState;
+	DxArrayPointer=0;
 //	UartSend('E');
 //	UartSend('x');
 //	UartSend(0x0A);
