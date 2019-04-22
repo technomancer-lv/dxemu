@@ -173,8 +173,8 @@ int main()
 	UCSR0B=0b00011000;	//Tx enabled, RX enabled
 	UCSR0C=0b00000110;	//
 	UBRR0H=0;
-//	UBRR0L=15;		//115200 8N1
-	UBRR0L=191;		//9600 8N1
+	UBRR0L=15;		//115200 8N1
+//	UBRR0L=191;		//9600 8N1
 
 	//SPI-mem init
 
@@ -314,7 +314,7 @@ int main()
 
 							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
 								UartSend(DxArray[DxArrayPointer]);
-							_delay_ms(500);
+							_delay_ms(10);
 
 							break;
 							}
@@ -330,7 +330,7 @@ int main()
 								while((UCSR0A&0b10000000)==0);
 								DxArray[DxArrayPointer]=UDR0;
 							}
-							_delay_ms(500);
+							_delay_ms(10);
 
 							break;
 							}
@@ -412,7 +412,7 @@ unsigned char	ShiftIn(void)		//Function for shifting in data from controller
 {
 	DxIrPort|=(1<<DxIrPin);
 	unsigned char ShiftData=0;
-	for(unsigned char ShiftCount=0;ShiftCount<7;ShiftCount++)
+	for(unsigned char ShiftCount=0;ShiftCount<8;ShiftCount++)
 	{
 		ShiftData=(ShiftData<<1);
 		if((DxDiIn&(1<<DxDiPin))==0)
