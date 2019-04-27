@@ -314,7 +314,7 @@ int main()
 
 							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
 								UartSend(DxArray[DxArrayPointer]);
-							_delay_ms(10);
+							_delay_ms(50);
 
 							break;
 							}
@@ -338,7 +338,6 @@ int main()
 						}
 
 						ExitState();
-
 					}
 					break;
 				}
