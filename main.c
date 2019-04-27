@@ -72,6 +72,7 @@
 #define	DxErrIn		PINC
 #define	DxErrDdr	DDRC
 #define	DxErrPin	4
+
 //Sdvig (OUT)
 #define	DxShftPort	PORTD
 #define	DxShftIn	PIND
@@ -87,9 +88,34 @@
 #define	UartTxDdr	DDRD
 #define	UartTxPin	1
 
+//SPI
+//CE
+#define	SpiCePort	PORTB
+#define	SpiCeIn		PINB
+#define	SpiCeDdr	DDRB
+#define	SpiCePin	2
+
+//MISO
+#define	SpiMisoPort	PORTB
+#define	SpiMisoIn	PINB
+#define	SpiMisoDdr	DDRB
+#define	SpiMisoPin	4
+
+//MOSI
+#define	SpiMosiPort	PORTB
+#define	SpiMosiIn	PINB
+#define	SpiMosiDdr	DDRB
+#define	SpiMosiPin	3
+
+//SCK
+#define	SpiSckPort	PORTB
+#define	SpiSckIn	PINB
+#define	SpiSckDdr	DDRB
+#define	SpiSckPin	5
+
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
-		
+
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
 unsigned char	SecAddr=0;		//Sector address received from controller
@@ -111,6 +137,9 @@ unsigned char	DxStatusReg=0b10000100;
 
 unsigned char	DxErrorReg=0;
 
+unsigned char	TempSecNum=0;
+
+
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
 							//from the controller. 0xFF - parity error
@@ -118,12 +147,21 @@ unsigned char	ShiftIn(void);				//Function for shifting in data from controller 
 
 void		ShiftOut(unsigned char ShiftByte);	//Function for shifting out data to controller
 
-unsigned char 	RomRead(unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector ro flash memory
-unsigned char 	RomWrite(unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
+unsigned char	SpiSend(unsigned char SpiData);
+
+/* Functions for write/read to/from flash memory
+*  TrkNum - track number  (0-77 for DX drive)
+*  SecNum - sector number (0-26 for DX drive)
+*  DiskNum - disk number  (0,1 - DX drives, 2,3 - DY drives if DY will be implemented)
+*/
+unsigned char 	RomRead(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
+unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector to flash memory
 
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		UartSend(unsigned char UartData);		//Function for debug data sending to PC
+
+
 
 
 // ProgramStart
@@ -177,11 +215,24 @@ int main()
 //	UBRR0L=191;		//9600 8N1
 
 	//SPI-mem init
+	SpiCePort|=(1<<SpiCePin);
+	SpiCeDdr|=(1<<SpiCePin);
+	SpiMisoDdr&=~(1<<SpiMisoPin);
+	SpiMosiDdr|=(1<<SpiMosiPin);
+	SpiSckDdr|=(1<<SpiSckPin);
+
+	SPCR=0b01010000;	//mode0, fosc/4
+	SPSR=0b00000000;
 
 	_delay_ms(1000);		//Startup delay
 	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
 
 	//========== MAIN LOOP ==========
+
+
+	unsigned char DebugTemp=RomRead(0,0,0);
+	DebugTemp=RomRead(2,8,3);
+
 
 	while(1)
 	{
@@ -421,6 +472,7 @@ unsigned char	ShiftIn(void)		//Function for shifting in data from controller
 		DxShftPort|=(1<<DxShftPin);
 		_delay_us(2);
 	}
+	while((SPSR&0b10000000)==0);
 	return ShiftData;
 }
 
@@ -444,14 +496,77 @@ void		ShiftOut(unsigned char ShiftByte)	//Function for shifting out data to cont
 }
 
 
-unsigned char RomRead(unsigned char TrkNum,unsigned char SecNum)
+unsigned char	SpiSend(unsigned char SpiData)
 {
-	unsigned int BlockBase=((TrkNum*32*128)+(SecNum*128));
-	BlockBase++;
-	for(unsigned int i=0;i<128;i++)
+	
+//	while((SPSR&0b10000000)==0);
+	SPDR=SpiData;
+	while((SPSR&0b10000000)==0);
+	unsigned char SpiTemp=SPDR;
+	return(SpiTemp);
+}
+
+
+/*
+* Data map:
+000000-07FFFF:	DX0 disk
+080000-0FFFFF:	DX1 disk
+100000-17FFFF:	DY1 disk
+180000-1FFFFF:	DY2 disk
+
+DX disks populates only about half of 4MB assigned to each disk.
+Flash memory can be only erased by 4KB blocks, so there's need
+for temporary storage when one of 32 emulated sectors located in 
+flash memory block that is erased. So second half of DX0 disk is used
+as a blocks for temporary storage while changing one sector. So:
+040000-07FFFF:  64 temporary blocks
+*/
+
+unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char SecNum)	//Writes 128-byte sector ro flash memory
+{
+	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
+
+
+	UartSend (0);
+	UartSend (SecAddr>>16);
+	UartSend (SecAddr>>8);
+	UartSend (SecAddr);
+
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x03);
+	SpiSend(SecAddr>>16);
+	SpiSend(SecAddr>>8);
+	SpiSend(SecAddr);
+
+
+	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
 	{
-		
+		//TO DO - read from flash
+		DxArray[RomReadLoop]=SpiSend(0);
 	}
+	SpiCePort|=(1<<SpiCePin);
+
+	for(unsigned char i=0;i<128;i++)
+		UartSend(DxArray[i]);
+
+	return 0;
+}
+
+unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum)	//Reads 128-byte sector from flash memory
+{
+	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
+	unsigned long int BlockAddr=(SecAddr&0xFFFFF000);
+
+	//Erase TempBlock
+
+	//Copy block that contains sector to be written to TempBlock
+
+	//Erase block that contains sector to be written
+
+	//Copy back TempBlock to current block with changed sector
+
+
 	return 0;
 }
 
