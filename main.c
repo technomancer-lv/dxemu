@@ -232,8 +232,8 @@ int main()
 	SpiMosiDdr|=(1<<SpiMosiPin);
 	SpiSckDdr|=(1<<SpiSckPin);
 
-	SPCR=0b01010000;	//mode0, fosc/4
-	SPSR=0b00000000;
+	SPCR=0b01010000;	//mode0, fosc/2
+	SPSR=0b00000001;	//SPI2X=1
 
 	_delay_ms(1000);		//Startup delay
 	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
@@ -659,29 +659,29 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 {
 //	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
 
-	UartSend('W');
-	HexSend(TrkNum);
-	UartSend(' ');
-	HexSend(SecNum);
-	UartSend(' ');
+//	UartSend('W');
+//	HexSend(TrkNum);
+//	UartSend(' ');
+//	HexSend(SecNum);
+//	UartSend(' ');
 
 	unsigned long int SecAddr=((TrkNum*26));
 	SecAddr+=SecNum;
 	SecAddr*=128;
 	SecAddr+=(DiskNum*0x80000);
 
-	HexSend(SecAddr>>16);
-	HexSend(SecAddr>>8);
-	HexSend(SecAddr);
-	UartSend(' ');
+//	HexSend(SecAddr>>16);
+//	HexSend(SecAddr>>8);
+//	HexSend(SecAddr);
+//	UartSend(' ');
 
 
 	unsigned long int BlockAddr=(SecAddr&0xFFFFF000);
 
-	HexSend(BlockAddr>>16);
-	HexSend(BlockAddr>>8);
-	HexSend(BlockAddr);
-	UartSend(' ');
+//	HexSend(BlockAddr>>16);
+//	HexSend(BlockAddr>>8);
+//	HexSend(BlockAddr);
+//	UartSend(' ');
 
 
 	//Erase TempBlock
@@ -689,17 +689,17 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 	TempBlockAddr*=0x1000;
 	TempBlockAddr+=0x40000;
 
-	HexSend(TempBlockAddr>>16);
-	HexSend(TempBlockAddr>>8);
-	HexSend(TempBlockAddr);
-	UartSend(' ');
+//	HexSend(TempBlockAddr>>16);
+//	HexSend(TempBlockAddr>>8);
+//	HexSend(TempBlockAddr);
+//	UartSend(' ');
 
 	RomEnWrite();
 	RomEraseBlock(TempBlockAddr);
 
-	UartSend('E');
-	UartSend('T');
-	UartSend(' ');
+//	UartSend('E');
+//	UartSend('T');
+//	UartSend(' ');
 
 //	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
 //		HexSend(DxArray[RomReadLoop]);
@@ -739,7 +739,7 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 			SpiSend(CopyAddr);
 			SpiSend(CopyArray[RomProgLoop]);
 			SpiCePort|=(1<<SpiCePin);
-			_delay_us(20);
+			_delay_us(11);
 			CopyAddr++;
 		}
 	}
@@ -771,7 +771,7 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 		CopyAddr=BlockAddr+(128*CopyLoop);
 		if(CopyAddr==SecAddr)
 		{
-		UartSend('=');
+//		UartSend('=');
 			for(unsigned char RomProgLoop=0;RomProgLoop<128;RomProgLoop++)
 			{
 				RomEnWrite();
@@ -784,14 +784,14 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 				SpiSend(CopyAddr);
 				SpiSend(DxArray[RomProgLoop]);
 				SpiCePort|=(1<<SpiCePin);
-				_delay_us(20);
+				_delay_us(11);
 				CopyAddr++;
 			}
 
 		}
 		else
 		{
-		UartSend('_');
+//		UartSend('_');
 			for(unsigned char RomProgLoop=0;RomProgLoop<128;RomProgLoop++)
 			{
 				RomEnWrite();
