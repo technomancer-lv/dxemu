@@ -115,6 +115,10 @@
 
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
+					//0 - DX0
+					//1 - DX1
+					//2 - DY0
+					//3 - DY1
 
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
@@ -137,7 +141,7 @@ unsigned char	DxStatusReg=0b10000100;
 
 unsigned char	DxErrorReg=0;
 
-unsigned char	TempSecNum=0;
+unsigned char	TempBlockNum=0;
 
 
 //Functions
@@ -154,12 +158,18 @@ unsigned char	SpiSend(unsigned char SpiData);
 *  SecNum - sector number (0-26 for DX drive)
 *  DiskNum - disk number  (0,1 - DX drives, 2,3 - DY drives if DY will be implemented)
 */
+
+void		RomSetStatus(unsigned char RomStatus);
+unsigned char	RomGetStatus(void);
+void		RomEnWrite(void);
+void		RomEraseBlock(unsigned long int EraseBlockAddr);
 unsigned char 	RomRead(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
 unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector to flash memory
 
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		UartSend(unsigned char UartData);		//Function for debug data sending to PC
+void		HexSend(unsigned char HexChar);
 
 
 
@@ -217,6 +227,7 @@ int main()
 	//SPI-mem init
 	SpiCePort|=(1<<SpiCePin);
 	SpiCeDdr|=(1<<SpiCePin);
+	SpiMisoPort|=(1<<SpiMisoPin);
 	SpiMisoDdr&=~(1<<SpiMisoPin);
 	SpiMosiDdr|=(1<<SpiMosiPin);
 	SpiSckDdr|=(1<<SpiSckPin);
@@ -229,9 +240,28 @@ int main()
 
 	//========== MAIN LOOP ==========
 
+	UartSend('S');
+	UartSend(' ');
+	RomSetStatus(0b00000000);
+	HexSend(RomGetStatus());
+	UartSend(0x0A);
+	UartSend(0x0D);
 
-	unsigned char DebugTemp=RomRead(0,0,0);
-	DebugTemp=RomRead(2,8,3);
+
+/*	for (unsigned char Tloop=0;Tloop<77;Tloop++)
+	{
+		for (unsigned char Sloop=0;Sloop<26;Sloop++)
+		{
+			for (unsigned char i=0;i<128;i++)
+				DxArray[i]=i;
+			DxArray[0]=Tloop;
+			DxArray[1]=Sloop;
+			UartSend(0x0A);
+			UartSend(0x0D);
+			RomWrite(0,Tloop,Sloop);
+		}
+	}
+*/
 
 
 	while(1)
@@ -240,6 +270,7 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
+				UartSend(' ');
 				UartSend('C');				//Debug
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
@@ -248,7 +279,7 @@ int main()
 				//Read command - shift in from controller
 				unsigned char CommandTemp=ShiftInP();
 				//TO DO - parity test goes here
-				DxDriveSelected=(CommandTemp>>4);	//Saves selected drive
+				DxDriveSelected=((CommandTemp>>4)&0x01);	//Saves selected drive
 				DxCommand=((CommandTemp>>1)&7);		//Saves command
 				UartSend(DxCommand+0x30);		//Debug
 			}
@@ -265,7 +296,6 @@ int main()
 					}
 					else				//Receive 128 bytes from controller
 					{
-					//	UartSend('T');
 						DxArray[DxArrayPointer]=ShiftIn();
 						DxArrayPointer++;
 
@@ -281,28 +311,26 @@ int main()
 				{
 					if(DxArrayPointer<128)
 					{
-					if(DxState==IdleState)
-					{
-					//TO DO - merge with else
-						DxState=ReadBufferState;
-						DxOutPort&=~(1<<DxOutPin);
-						_delay_us(10);
-					//	UartSend('T');
-						ShiftOut(DxArray[0]);
-						DxArrayPointer=1;
-						DxIrPort&=~(1<<DxIrPin);
-					}
-					else
-					{
-						DxIrPort|=(1<<DxIrPin);
-					//	UartSend('T');
-						ShiftOut(DxArray[DxArrayPointer]);
-						DxArrayPointer++;
-					//	if(DxArrayPointer==128)
-					//		ExitState();
-					//	else
+						if(DxState==IdleState)
+						{
+						//TO DO - merge with else
+							DxState=ReadBufferState;
+							DxOutPort&=~(1<<DxOutPin);
+							_delay_us(10);
+							ShiftOut(DxArray[0]);
+							DxArrayPointer=1;
 							DxIrPort&=~(1<<DxIrPin);
-					}
+						}
+						else
+						{
+							DxIrPort|=(1<<DxIrPin);
+							ShiftOut(DxArray[DxArrayPointer]);
+							DxArrayPointer++;
+						//	if(DxArrayPointer==128)
+						//		ExitState();
+						//	else
+								DxIrPort&=~(1<<DxIrPin);
+						}
 					}
 					else
 					{
@@ -326,7 +354,7 @@ int main()
 					{
 						unsigned int	SectorTemp=ShiftInP();
 						//TO DO - parity test
-						SecAddr=SectorTemp;
+						SecAddr=(SectorTemp-1);
 						if (SecAddr>26)
 						{
 							DxErrPort&=~(1<<DxErrPin);
@@ -359,31 +387,38 @@ int main()
 							case 2:
 							case 6:
 							{
-							UartSend('W');
-							UartSend(SecAddr);
-							UartSend(TrackAddr);
+								UartSend('W');
+								UartSend((TrackAddr&0x0F)+0x30);
+								UartSend((SecAddr&0x0F)+0x30);
 
-							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
-								UartSend(DxArray[DxArrayPointer]);
-							_delay_ms(50);
+								RomWrite(DxDriveSelected,TrackAddr,SecAddr);
 
-							break;
+							//	_delay_ms(50);
+
+								break;
 							}
 
 							case 3:
 							{
-							UartSend('R');
-							UartSend(SecAddr);
-							UartSend(TrackAddr);
+								RomRead(DxDriveSelected,TrackAddr,SecAddr);
 
-							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
-							{
-								while((UCSR0A&0b10000000)==0);
-								DxArray[DxArrayPointer]=UDR0;
-							}
-							_delay_ms(10);
 
-							break;
+								//Old storage emulation over serial
+								UartSend('R');
+								UartSend((TrackAddr&0x0F)+0x30);
+								UartSend((SecAddr&0x0F)+0x30);
+
+							/*
+
+								for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
+								{
+									while((UCSR0A&0b10000000)==0);
+									DxArray[DxArrayPointer]=UDR0;
+								}
+							*/
+							//	_delay_ms(50);
+
+								break;
 							}
 
 						}
@@ -454,7 +489,7 @@ unsigned char	ShiftInP(void)		//Function for shifting in data from controller
 	if((DxDiIn&(1<<DxDiPin))==0)
 		ShiftParity+=1;
 	//TO DO - test parity here
-	
+
 	return ShiftData;
 }
 
@@ -472,7 +507,7 @@ unsigned char	ShiftIn(void)		//Function for shifting in data from controller
 		DxShftPort|=(1<<DxShftPin);
 		_delay_us(2);
 	}
-	while((SPSR&0b10000000)==0);
+//	while((SPSR&0b10000000)==0);
 	return ShiftData;
 }
 
@@ -498,8 +533,6 @@ void		ShiftOut(unsigned char ShiftByte)	//Function for shifting out data to cont
 
 unsigned char	SpiSend(unsigned char SpiData)
 {
-	
-//	while((SPSR&0b10000000)==0);
 	SPDR=SpiData;
 	while((SPSR&0b10000000)==0);
 	unsigned char SpiTemp=SPDR;
@@ -522,15 +555,69 @@ as a blocks for temporary storage while changing one sector. So:
 040000-07FFFF:  64 temporary blocks
 */
 
+void		RomSetStatus(unsigned char RomStatus)
+{
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x50);
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x01);
+	SpiSend(RomStatus);
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+}
+
+unsigned char	RomGetStatus(void)
+{
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x05);
+
+
+	unsigned char StatTemp=SpiSend(0);	//Get status value
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+	return StatTemp;
+}
+
+void		RomEnWrite(void)
+{
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x06);
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+}
+
+void		RomEraseBlock(unsigned long int EraseBlockAddr)
+{
+	while(RomGetStatus()&0x01);
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x20);
+	SpiSend(EraseBlockAddr>>16);
+	SpiSend(EraseBlockAddr>>8);
+	SpiSend(EraseBlockAddr);
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+	while(RomGetStatus()&0x01);
+}
+
 unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char SecNum)	//Writes 128-byte sector ro flash memory
 {
-	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
+//	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
 
 
-	UartSend (0);
-	UartSend (SecAddr>>16);
-	UartSend (SecAddr>>8);
-	UartSend (SecAddr);
+
+        unsigned long int SecAddr=((TrkNum*26));
+        SecAddr+=SecNum;
+        SecAddr*=128;
+	SecAddr+=(DiskNum*0x80000);
+
 
 	SpiCePort&=~(1<<SpiCePin);
 	_delay_us(2);
@@ -542,30 +629,192 @@ unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char 
 
 	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
 	{
-		//TO DO - read from flash
-		DxArray[RomReadLoop]=SpiSend(0);
+		DxArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
 	}
 	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
 
-	for(unsigned char i=0;i<128;i++)
-		UartSend(DxArray[i]);
+//	for(unsigned char i=0;i<128;i++)
+//		UartSend(DxArray[i]);
 
 	return 0;
 }
 
+void HexSend(unsigned char HexChar)
+{
+unsigned char HexTemp=(HexChar>>4);
+if(HexTemp>9)
+	UartSend(HexTemp+55);
+else
+	UartSend(HexTemp+0x30);
+
+HexTemp=(HexChar&0x0F);
+if(HexTemp>9)
+	UartSend(HexTemp+55);
+else
+	UartSend(HexTemp+0x30);
+}
+
 unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum)	//Reads 128-byte sector from flash memory
 {
-	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
+//	unsigned long int SecAddr=(DiskNum*0x80000)+(TrkNum*26*128)+(SecNum*128);
+
+	UartSend('W');
+	HexSend(TrkNum);
+	UartSend(' ');
+	HexSend(SecNum);
+	UartSend(' ');
+
+	unsigned long int SecAddr=((TrkNum*26));
+	SecAddr+=SecNum;
+	SecAddr*=128;
+	SecAddr+=(DiskNum*0x80000);
+
+	HexSend(SecAddr>>16);
+	HexSend(SecAddr>>8);
+	HexSend(SecAddr);
+	UartSend(' ');
+
+
 	unsigned long int BlockAddr=(SecAddr&0xFFFFF000);
 
+	HexSend(BlockAddr>>16);
+	HexSend(BlockAddr>>8);
+	HexSend(BlockAddr);
+	UartSend(' ');
+
+
 	//Erase TempBlock
+	unsigned long int TempBlockAddr=TempBlockNum;
+	TempBlockAddr*=0x1000;
+	TempBlockAddr+=0x40000;
+
+	HexSend(TempBlockAddr>>16);
+	HexSend(TempBlockAddr>>8);
+	HexSend(TempBlockAddr);
+	UartSend(' ');
+
+	RomEnWrite();
+	RomEraseBlock(TempBlockAddr);
+
+	UartSend('E');
+	UartSend('T');
+	UartSend(' ');
+
+//	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
+//		HexSend(DxArray[RomReadLoop]);
 
 	//Copy block that contains sector to be written to TempBlock
+	unsigned char CopyArray[128];
+	unsigned long int CopyAddr=0;
+	for(unsigned int CopyLoop=0;CopyLoop<32;CopyLoop++)
+	{
+		CopyAddr=BlockAddr+(128*CopyLoop);
+		//Read sector to buffer
+		SpiCePort&=~(1<<SpiCePin);
+		_delay_us(2);
+		SpiSend(0x03);
+		SpiSend(CopyAddr>>16);
+		SpiSend(CopyAddr>>8);
+		SpiSend(CopyAddr);
+
+		for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
+		{
+			CopyArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
+		}
+		SpiCePort|=(1<<SpiCePin);
+		_delay_us(2);
+
+		CopyAddr=TempBlockAddr+(128*CopyLoop);
+
+		for(unsigned char RomProgLoop=0;RomProgLoop<128;RomProgLoop++)
+		{
+			RomEnWrite();
+
+			SpiCePort&=~(1<<SpiCePin);
+			_delay_us(2);
+			SpiSend(0x02);
+			SpiSend(CopyAddr>>16);
+			SpiSend(CopyAddr>>8);
+			SpiSend(CopyAddr);
+			SpiSend(CopyArray[RomProgLoop]);
+			SpiCePort|=(1<<SpiCePin);
+			_delay_us(20);
+			CopyAddr++;
+		}
+	}
 
 	//Erase block that contains sector to be written
+	RomEnWrite();
+	RomEraseBlock(BlockAddr);
 
 	//Copy back TempBlock to current block with changed sector
 
+	for(unsigned int CopyLoop=0;CopyLoop<32;CopyLoop++)
+	{
+		CopyAddr=TempBlockAddr+(128*CopyLoop);
+		//Read sector to buffer
+		SpiCePort&=~(1<<SpiCePin);
+		_delay_us(2);
+		SpiSend(0x03);
+		SpiSend(CopyAddr>>16);
+		SpiSend(CopyAddr>>8);
+		SpiSend(CopyAddr);
+
+		for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
+		{
+			CopyArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
+		}
+		SpiCePort|=(1<<SpiCePin);
+		_delay_us(2);
+
+		CopyAddr=BlockAddr+(128*CopyLoop);
+		if(CopyAddr==SecAddr)
+		{
+		UartSend('=');
+			for(unsigned char RomProgLoop=0;RomProgLoop<128;RomProgLoop++)
+			{
+				RomEnWrite();
+
+				SpiCePort&=~(1<<SpiCePin);
+				_delay_us(2);
+				SpiSend(0x02);
+				SpiSend(CopyAddr>>16);
+				SpiSend(CopyAddr>>8);
+				SpiSend(CopyAddr);
+				SpiSend(DxArray[RomProgLoop]);
+				SpiCePort|=(1<<SpiCePin);
+				_delay_us(20);
+				CopyAddr++;
+			}
+
+		}
+		else
+		{
+		UartSend('_');
+			for(unsigned char RomProgLoop=0;RomProgLoop<128;RomProgLoop++)
+			{
+				RomEnWrite();
+
+				SpiCePort&=~(1<<SpiCePin);
+				_delay_us(2);
+				SpiSend(0x02);
+				SpiSend(CopyAddr>>16);
+				SpiSend(CopyAddr>>8);
+				SpiSend(CopyAddr);
+				SpiSend(CopyArray[RomProgLoop]);
+				SpiCePort|=(1<<SpiCePin);
+				_delay_us(20);
+				CopyAddr++;
+			}
+		}
+	}
+
+
+	//Increment TempBlock
+	TempBlockNum++;
+	if(TempBlockNum==64)
+		TempBlockNum=0;
 
 	return 0;
 }
