@@ -13,14 +13,17 @@
 *	TO DO:	Init all inputs also
 *		Write marked sectors
 *		Add 12bit compatibility at least in hardware
+*		Parity check (in progress)
 *		Interrupts
 *		Sleep mode
 *		CLI
 *		Xmodem disk image transfer
-*		Activity LED only flashing. Or ultra low power.
+*		Activity LED only flashing. Or ultra low power LED.
 *		Welcome message
 *		Function time-outs
 *		Divide code to separate files
+*		Statistics - command tyoe count, error count
+*		Simple setup parameters - power saving, etc
 */
 
 #include <avr/io.h>
@@ -28,7 +31,7 @@
 #include <avr/interrupt.h>
 
 //DX drive IO pin init
-//"Signal name" (controller pin name) (I/O type)
+//"Signal name in russian" (controller pin name) (I/O type)
 //"Nach. ustanovka" (SET) (IN)
 #define	DxSetPort	PORTD
 #define	DxSetIn		PIND
@@ -195,6 +198,7 @@ void		ExitState(void);			//Function that exits current state because of reset si
 void		UartSend(unsigned char UartData);		//Function for debug data sending to PC
 void		HexSend(unsigned char HexChar);
 
+unsigned char Xtransmit (unsigned char DriveNum);
 
 
 
@@ -481,7 +485,7 @@ int main()
 	}
 }
 
-unsigned char	ShiftInP(void)		//Function for shifting in data from controller
+unsigned char	ShiftInP(void)		//Function for shifting in commands and addresses from controller
 {
 	DxIrPort|=(1<<DxIrPin);
 	unsigned char ShiftData=0;
@@ -491,16 +495,18 @@ unsigned char	ShiftInP(void)		//Function for shifting in data from controller
 		ShiftData=(ShiftData<<1);
 		if((DxDiIn&(1<<DxDiPin))==0)
 			{
-			ShiftData++;
-			ParityBit++;
+			ShiftData++;	//If received 1, set data LSB to one
+			ParityBit++;	//Increase parity counter on every received 1
 			}
-		DxShftPort&=~(1<<DxShftPin);
+		DxShftPort&=~(1<<DxShftPin);	//Shift pulse
 		_delay_us(1);
 		DxShftPort|=(1<<DxShftPin);
 		_delay_us(2);
 	}
 	if((DxDiIn&(1<<DxDiPin))==0)
-		ParityBit++;
+		ParityBit++;		//Increase parity counter also on received parity 1
+					//If there are no parity errors, parity LSB
+					//should always be 1.
 	//TO DO - test parity here
 	UartSend(0x0D);
 	UartSend(0x0A);
@@ -508,16 +514,18 @@ unsigned char	ShiftInP(void)		//Function for shifting in data from controller
 	UartSend(' ');
 	if((ParityBit&1)==1)
 	{
-		UartSend('O');
+		UartSend('O');		//Debug msg
 		UartSend('K');
+		return ShiftData;
 	}
 	else
 	{
 		UartSend('E');
 		UartSend('R');
 		UartSend('R');
+		return 0xFF;		//Received command or track/sector address should never be
+					//0xFF, so I can use this value as an error code.
 	}
-	return ShiftData;
 }
 
 unsigned char	ShiftIn(void)		//Function for shifting in data from controller
@@ -529,7 +537,7 @@ unsigned char	ShiftIn(void)		//Function for shifting in data from controller
 		ShiftData=(ShiftData<<1);
 		if((DxDiIn&(1<<DxDiPin))==0)
 			ShiftData+=1;
-		DxShftPort&=~(1<<DxShftPin);
+		DxShftPort&=~(1<<DxShftPin);	//Shift pulse
 		_delay_us(1);
 		DxShftPort|=(1<<DxShftPin);
 		_delay_us(2);
@@ -877,4 +885,29 @@ void	UartSend(unsigned char UartData)		//Function for debug data sending to PC
 {
 	while((UCSR0A&0b00100000)==0);	//Waits until Tx buffer empty
 		UDR0=UartData;		//Send data byte
+}
+
+
+//======== XMODEM ========
+//Xmodem file transfer
+
+unsigned char Xtransmit (unsigned char DriveNum)
+{
+					//Calculate drive base address
+	unsigned long int ImageAddress=DriveNum;
+	ImageAddress*=0x80000;
+					//Send 2002 data packets.
+					//One disk contains 2002 setcors (77 tracks*26 sectors)
+					//One data packet is exactly one sector (128 bytes)
+	for unsigned int (XtLoop=0;XtLoop<2002;XtLoop++)
+	{
+		//Send data packet
+
+		//Wait for ACK
+
+	}
+
+	//Send EOT
+
+	return 0;
 }
