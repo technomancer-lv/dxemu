@@ -24,6 +24,7 @@
 *		Divide code to separate files
 *		Statistics - command tyoe count, error count
 *		Simple setup parameters - power saving, etc
+*
 */
 
 #include <avr/io.h>
