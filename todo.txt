@@ -1,0 +1,20 @@
+Prog:
+  Arduino compatible bootloader for firmware upgrades
+  Xmodem for uploading/downloading disk images
+  Smaller todo steps are marked in the beginning and all over program source
+
+PCB:
+  Todo list marked in PCB file on top layer
+  
+SCH:
+  Create schematics according to pcb
+  
+Mechanical:
+  Design protective plastic to prevent short circuits to computer board frame
+  
+Electrical:
+  Test possibility to power emulator from "LOG1" signal.
+  
+Materials:
+  Buy proper 60pin connectors (ordered from svinka)
+  Buy I4 interface board to test compatibility with it (ask seriy)
