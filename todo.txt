@@ -13,8 +13,16 @@ Mechanical:
   Design protective plastic to prevent short circuits to computer board frame
   
 Electrical:
-  Test possibility to power emulator from "LOG1" signal.
+  Test possibility to power emulator from "LOG1" signal on MC1201 board.
   
 Materials:
   Buy proper 60pin connectors (ordered from svinka)
   Buy I4 interface board to test compatibility with it (ask seriy)
+
+Documentation:
+  Add datasheets of all key components to folder "pdf"
+  Add used original PDP-11 documentation to folder "pdf"
+  Make schematics pdf file when finished
+  Make pcb pdf file with layers when finished
+
+
