@@ -16,14 +16,14 @@
 # etc...
 
 # program name should not be changed...
-PROGRAM    = ATmegaBOOT_168
+PROGRAM    = dxemu_bootloader
 
 # enter the parameters for the avrdude isp tool
-ISPTOOL	   = stk500v2
+ISPTOOL	   = atmelice_isp
 ISPPORT	   = usb
 ISPSPEED   = -b 115200
 
-MCU_TARGET = atmega168
+MCU_TARGET = atmega328
 LDSECTION  = --section-start=.text=0x3800
 
 # the efuse should really be 0xf8; since, however, only the lower
