@@ -1,9 +1,9 @@
 Prog:
-  Arduino compatible bootloader for firmware upgrades
   Xmodem for uploading/downloading disk images
   Possible backup functionality to save working images to unused flash memory regions
   Smaller todo steps are marked in the beginning and all over program source
   Test why I4 controller is not loading stable and is ruining disk image
+  Test why bootloader is not verifying correctly (but works)
 
 PCB:
   Todo list marked in PCB file on top layer
@@ -16,13 +16,8 @@ Mechanical:
     Two pieces of plastics, one with cutouts, one as cover.
   
 Electrical:
-  Test possibility to power emulator from "LOG1" signal on MC1201 board.
   Make it work with I4 board and test with MC again
   Test printer functionality - error, paper end, busy
-
-Materials:
-  (done) Buy proper 60pin connectors (ordered from svinka)
-  (done) Buy I4 interface board to test compatibility with it (ask seriy)
 
 Documentation:
   Add datasheets of all key components to folder "pdf"
