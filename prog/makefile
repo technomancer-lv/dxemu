@@ -1,3 +1,4 @@
+
 MCU=atmega328p
 F_CPU=14745600
 CC=avr-gcc
@@ -11,8 +12,11 @@ all:
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
 	${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
 
-flash:
+flash_isp:
 	avrdude -p ${MCU} -c atmelice_isp -U flash:w:${TARGET}.hex:i -F -P usb
+
+flash_bld:
+	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB1 -b 57600 -D -U flash:w:${TARGET}.hex:i
 
 clean:
 	rm -f *.bin *.hex

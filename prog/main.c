@@ -470,7 +470,8 @@ int main()
 		}
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
-			//TO DO - fill buffer with drive 0 track 1 sector 0
+			//Fill buffer with drive 0 track 1 sector 0
+			RomRead(0,1,0);
 			DxDonePort|=(1<<DxDonePin);
 			_delay_ms(100);
 			DxOutPort&=~(1<<DxOutPin);
@@ -508,7 +509,7 @@ unsigned char	ShiftInP(void)		//Function for shifting in commands and addresses 
 		ParityBit++;		//Increase parity counter also on received parity 1
 					//If there are no parity errors, parity LSB
 					//should always be 1.
-	//TO DO - test parity here
+					//Parity is tested here
 	UartSend(0x0D);
 	UartSend(0x0A);
 	UartSend('P');
@@ -579,7 +580,7 @@ unsigned char	SpiSend(unsigned char SpiData)		//Function for data receive/transm
 * Data map in ROM:
 000000-07FFFF:	DX0 disk
 080000-0FFFFF:	DX1 disk
-100000-17FFFF:	DY1 disk (?)
+100000-17FFFF:	DY1 disk (?) (or maybe backup for DX?)
 180000-1FFFFF:	DY2 disk (?)
 
 DX disks populates only about half of 4MB assigned to each disk.
@@ -900,7 +901,7 @@ unsigned char Xtransmit (unsigned char DriveNum)
 					//Send 2002 data packets.
 					//One disk contains 2002 setcors (77 tracks*26 sectors)
 					//One data packet is exactly one sector (128 bytes)
-	for unsigned int (XtLoop=0;XtLoop<2002;XtLoop++)
+	for (unsigned int XtLoop=0;XtLoop<2002;XtLoop++)
 	{
 		//Send data packet
 

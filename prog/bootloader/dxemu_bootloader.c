@@ -126,78 +126,18 @@
 
 /* onboard LED is used to indicate, that the bootloader was entered (3x flashing) */
 /* if monitor functions are included, LED goes on after monitor was entered */
-#if defined __AVR_ATmega128__ || defined __AVR_ATmega1280__
-/* Onboard LED is connected to pin PB7 (e.g. Crumb128, PROBOmega128, Savvy128, Arduino Mega) */
-#define LED_DDR  DDRB
-#define LED_PORT PORTB
-#define LED_PIN  PINB
-#define LED      PINB7
-#else
 /* Onboard LED is connected to pin PB5 in Arduino NG, Diecimila, and Duomilanuove */ 
 /* other boards like e.g. Crumb8, Crumb168 are using PB2 */
 #define LED_DDR  DDRB
 #define LED_PORT PORTB
 #define LED_PIN  PINB
-#define LED      PINB5
-#endif
-
-
-/* monitor functions will only be compiled when using ATmega128, due to bootblock size constraints */
-#if defined(__AVR_ATmega128__) || defined(__AVR_ATmega1280__)
-#define MONITOR 1
-#endif
-
+#define LED      PINB1
 
 /* define various device id's */
 /* manufacturer byte is always the same */
 #define SIG1	0x1E	// Yep, Atmel is the only manufacturer of AVR micros.  Single source :(
 
-#if defined __AVR_ATmega1280__
-#define SIG2	0x97
-#define SIG3	0x03
-#define PAGE_SIZE	0x80U	//128 words
-
-#elif defined __AVR_ATmega1281__
-#define SIG2	0x97
-#define SIG3	0x04
-#define PAGE_SIZE	0x80U	//128 words
-
-#elif defined __AVR_ATmega128__
-#define SIG2	0x97
-#define SIG3	0x02
-#define PAGE_SIZE	0x80U	//128 words
-
-#elif defined __AVR_ATmega64__
-#define SIG2	0x96
-#define SIG3	0x02
-#define PAGE_SIZE	0x80U	//128 words
-
-#elif defined __AVR_ATmega32__
-#define SIG2	0x95
-#define SIG3	0x02
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega16__
-#define SIG2	0x94
-#define SIG3	0x03
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega8__
-#define SIG2	0x93
-#define SIG3	0x07
-#define PAGE_SIZE	0x20U	//32 words
-
-#elif defined __AVR_ATmega88__
-#define SIG2	0x93
-#define SIG3	0x0a
-#define PAGE_SIZE	0x20U	//32 words
-
-#elif defined __AVR_ATmega168__
-#define SIG2	0x94
-#define SIG3	0x06
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega328P__
+#if defined __AVR_ATmega328P__
 #define SIG2	0x95
 #define SIG3	0x0F
 #define PAGE_SIZE	0x40U	//64 words
@@ -206,31 +146,6 @@
 #define SIG2	0x95
 #define SIG3	0x14
 #define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega162__
-#define SIG2	0x94
-#define SIG3	0x04
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega163__
-#define SIG2	0x94
-#define SIG3	0x02
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega169__
-#define SIG2	0x94
-#define SIG3	0x05
-#define PAGE_SIZE	0x40U	//64 words
-
-#elif defined __AVR_ATmega8515__
-#define SIG2	0x93
-#define SIG3	0x06
-#define PAGE_SIZE	0x20U	//32 words
-
-#elif defined __AVR_ATmega8535__
-#define SIG2	0x93
-#define SIG3	0x08
-#define PAGE_SIZE	0x20U	//32 words
 #endif
 
 
@@ -293,54 +208,9 @@ int main(void)
 	asm volatile("nop\n\t");
 #endif
 
-	/* set pin direction for bootloader pin and enable pullup */
-	/* for ATmega128, two pins need to be initialized */
-#ifdef __AVR_ATmega128__
-	BL_DDR &= ~_BV(BL0);
-	BL_DDR &= ~_BV(BL1);
-	BL_PORT |= _BV(BL0);
-	BL_PORT |= _BV(BL1);
-#else
-	/* We run the bootloader regardless of the state of this pin.  Thus, don't
-	put it in a different state than the other pins.  --DAM, 070709
-	This also applies to Arduino Mega -- DC, 080930
-	BL_DDR &= ~_BV(BL);
-	BL_PORT |= _BV(BL);
-	*/
-#endif
-
-
-#ifdef __AVR_ATmega128__
-	/* check which UART should be used for booting */
-	if(bit_is_clear(BL_PIN, BL0)) {
-		bootuart = 1;
-	}
-	else if(bit_is_clear(BL_PIN, BL1)) {
-		bootuart = 2;
-	}
-#endif
-
-#if defined __AVR_ATmega1280__
-	/* the mega1280 chip has four serial ports ... we could eventually use any of them, or not? */
-	/* however, we don't wanna confuse people, to avoid making a mess, we will stick to RXD0, TXD0 */
-	bootuart = 1;
-#endif
-
 	/* check if flash is programmed already, if not start bootloader anyway */
 	if(pgm_read_byte_near(0x0000) != 0xFF) {
 
-#ifdef __AVR_ATmega128__
-	/* no UART was selected, start application */
-	if(!bootuart) {
-		app_start();
-	}
-#else
-	/* check if bootloader pin is set low */
-	/* we don't start this part neither for the m8, nor m168 */
-	//if(bit_is_set(BL_PIN, BL)) {
-	//      app_start();
-	//    }
-#endif
 	}
 
 #ifdef __AVR_ATmega128__    
@@ -405,16 +275,6 @@ int main(void)
 	UCSRC = 0x06;
 	UCSRB = _BV(TXEN)|_BV(RXEN);
 #endif
-
-#if defined __AVR_ATmega1280__
-	/* Enable internal pull-up resistor on pin D0 (RX), in order
-	to supress line noise that prevents the bootloader from
-	timing out (DAM: 20070509) */
-	/* feature added to the Arduino Mega --DC: 080930 */
-	DDRE &= ~_BV(PINE0);
-	PORTE |= _BV(PINE0);
-#endif
-
 
 	/* set LED pin as output */
 	LED_DDR |= _BV(LED);

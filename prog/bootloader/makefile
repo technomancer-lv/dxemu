@@ -3,8 +3,8 @@ ISPTOOL	   = atmelice_isp
 
 #LDSECTION  = --section-start=.text=0x3800
 
-ISPFUSES    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -e -u -U lock:w:0x3f:m -U efuse:w:0x$(EFUSE):m -U hfuse:w:0x$(HFUSE):m -U lfuse:w:0x$(LFUSE):m
-ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM)_$(TARGET).hex -U lock:w:0x0f:m
+ISPFUSES    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -e -u -U lock:w:0xff:m -U efuse:w:0x$(EFUSE):m -U hfuse:w:0x$(HFUSE):m -U lfuse:w:0x$(LFUSE):m
+ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM).hex -U lock:w:0x0f:m
 
 OBJ        = $(PROGRAM).o
 OPTIMIZE   = -Os
@@ -34,7 +34,7 @@ flash:	TARGET = atmega328
 flash:	MCU_TARGET = atmega328p
 flash:	HFUSE = DA
 flash:	LFUSE = FF
-flash:	EFUSE = 05
+flash:	EFUSE = FD
 flash:	isp
 
 isp: $(TARGET)
