@@ -5,25 +5,17 @@ Prog:
   Test why I4 controller is not loading stable and is ruining disk image
   Test why bootloader is not verifying correctly (but works)
 
-PCB:
-  Todo list marked in PCB file on top layer
-  
-SCH:
-  Create schematics according to pcb
-  
 Mechanical:
   Design protective plastic to prevent short circuits to computer board frame.
     Two pieces of plastics, one with cutouts, one as cover.
   
 Electrical:
   Make it work with I4 board and test with MC again
-  Test printer functionality - error, paper end, busy
 
 Documentation:
   Add datasheets of all key components to folder "pdf"
   Add used original PDP-11 documentation to folder "pdf"
   Add 1801VP1-033 pdf to folder "pdf"
   Make schematics pdf file when finished
-  Make pcb pdf file with layers when finished
 
 
