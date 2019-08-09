@@ -37,49 +37,49 @@
 #define	DxSetPort	PORTD
 #define	DxSetIn		PIND
 #define	DxSetDdr	DDRD
-#define	DxSetPin	3
+#define	DxSetPin	2
 
 //"Pusk" (RUN) (IN)
 #define	DxRunPort	PORTD
 #define	DxRunIn		PIND
 #define	DxRunDdr	DDRD
-#define	DxRunPin	2
+#define	DxRunPin	3
 
 //Dannie (DI) (I)
-#define	DxDiPort	PORTB
-#define	DxDiIn		PINB
-#define	DxDiDdr		DDRB
-#define	DxDiPin		0
+#define	DxDiPort	PORTC
+#define	DxDiIn		PINC
+#define	DxDiDdr		DDRC
+#define	DxDiPin		1
 
 //Dannie (DO) (O)
-#define	DxDoPort	PORTB
-#define	DxDoIn		PINB
-#define	DxDoDdr		DDRB
-#define	DxDoPin		1
+#define	DxDoPort	PORTC
+#define	DxDoIn		PINC
+#define	DxDoDdr		DDRC
+#define	DxDoPin		0
 
 //Treb. peredachi (IR) (OUT)
-#define	DxIrPort	PORTB
-#define	DxIrIn		PINB
-#define	DxIrDdr		DDRB
-#define	DxIrPin		2
+#define	DxIrPort	PORTC
+#define	DxIrIn		PINC
+#define	DxIrDdr		DDRC
+#define	DxIrPin		5
 
 //Zaversheno (DONE) (OUT)
-#define	DxDonePort	PORTD
-#define	DxDoneIn	PIND
-#define	DxDoneDdr	DDRD
-#define	DxDonePin	6
+#define	DxDonePort	PORTC
+#define	DxDoneIn	PINC
+#define	DxDoneDdr	DDRC
+#define	DxDonePin	2
 
 //Vivod (OUT) (OUT)
-#define	DxOutPort	PORTD
-#define	DxOutIn		PIND
-#define	DxOutDdr	DDRD
-#define	DxOutPin	5
+#define	DxOutPort	PORTC
+#define	DxOutIn		PINC
+#define	DxOutDdr	DDRC
+#define	DxOutPin	3
 
 //Oshibka (ERR) (OUT)
-#define	DxErrPort	PORTD
-#define	DxErrIn		PIND
-#define	DxErrDdr	DDRD
-#define	DxErrPin	7
+#define	DxErrPort	PORTC
+#define	DxErrIn		PINC
+#define	DxErrDdr	DDRC
+#define	DxErrPin	4
 
 //Sdvig (SHFT) (OUT)
 #define	DxShftPort	PORTD
@@ -112,10 +112,10 @@
 
 //SPI
 //CE (software controlled)
-#define	SpiCePort	PORTC
-#define	SpiCeIn		PINC
-#define	SpiCeDdr	DDRC
-#define	SpiCePin	1
+#define	SpiCePort	PORTB
+#define	SpiCeIn		PINB
+#define	SpiCeDdr	DDRB
+#define	SpiCePin	2
 
 //MISO
 #define	SpiMisoPort	PORTB
@@ -136,10 +136,10 @@
 #define	SpiSckPin	5
 
 //Activity LED
-#define	ActLedPort	PORTC
-#define	ActLedIn	PINC
-#define	ActLedDdr	DDRC
-#define	ActLedPin	2
+#define	ActLedPort	PORTB
+#define	ActLedIn	PINB
+#define	ActLedDdr	DDRB
+#define	ActLedPin	1
 
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number

@@ -8,10 +8,11 @@ Prog:
 Mechanical:
   Design protective plastic to prevent short circuits to computer board frame.
     Two pieces of plastics, one with cutouts, one as cover.
+    1,5mm thick, clear lasercut plexiglass
   
 Electrical:
   Make it work with I4 board and test with MC again
-
+  
 Documentation:
   Add datasheets of all key components to folder "pdf"
   Add used original PDP-11 documentation to folder "pdf"
