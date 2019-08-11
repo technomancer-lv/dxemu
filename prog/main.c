@@ -30,7 +30,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
-
+#include "avr_uart_fifo.h"
 //DX drive IO pin init
 //"Signal name in russian" (controller pin name) (I/O type)
 //"Nach. ustanovka" (SET) (IN)
@@ -196,7 +196,6 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
-void		UartSend(unsigned char UartData);		//Function for debug data sending to PC
 void		HexSend(unsigned char HexChar);
 
 unsigned char Xtransmit (unsigned char DriveNum);
@@ -270,7 +269,7 @@ int main()
 	//Activity LED 0 active high, out
 	ActLedPort&=~(1<<ActLedPin);
 	ActLedDdr|=(1<<ActLedPin);
-
+	UartInit(115200);
 	_delay_ms(1000);		//Startup delay
 	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
 
@@ -471,6 +470,7 @@ int main()
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
 			//Fill buffer with drive 0 track 1 sector 0
+			//TODO: make reset edge sensitive
 			RomRead(0,1,0);
 			DxDonePort|=(1<<DxDonePin);
 			_delay_ms(100);
@@ -881,12 +881,6 @@ void	ExitState(void)			//Function for resetting DX interface to idle state
 	DxCommand=NoCommand;		//Reset state machine
 	DxState=IdleState;
 	DxArrayPointer=0;
-}
-
-void	UartSend(unsigned char UartData)		//Function for debug data sending to PC
-{
-	while((UCSR0A&0b00100000)==0);	//Waits until Tx buffer empty
-		UDR0=UartData;		//Send data byte
 }
 
 
