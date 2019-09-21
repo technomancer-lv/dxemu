@@ -31,6 +31,8 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "avr_uart_fifo.h"
+#include "cli_dxemu.h"
+
 //DX drive IO pin init
 //"Signal name in russian" (controller pin name) (I/O type)
 //"Nach. ustanovka" (SET) (IN)
@@ -171,6 +173,8 @@ unsigned char	DxErrorReg=0;
 
 unsigned char	TempBlockNum=0;
 
+unsigned char	SystemStatus=0;
+#define	DebugOn		0
 
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
@@ -249,11 +253,13 @@ int main()
 	UartRxPort|=(1<<UartRxPin);	//UART Rx - IN, pulled high
 	UartRxDdr&=~(1<<UartRxPin);
 	UCSR0A=0b00000010;
-	UCSR0B=0b00011000;	//Tx enabled, RX enabled
+	UCSR0B=0b11011000;	//Tx enabled, RX enabled
 	UCSR0C=0b00000110;	//
 	UBRR0H=0;
 	UBRR0L=15;		//115200 8N1
 //	UBRR0L=191;		//9600 8N1
+
+	
 
 	//SPI-mem init
 	SpiCePort|=(1<<SpiCePin);	//SPI CE - OUT, init high
@@ -266,10 +272,22 @@ int main()
 	SPCR=0b01010000;	//mode0, fosc/2
 	SPSR=0b00000001;	//SPI2X=1
 
+	//INT init
+	sei();
+
+
 	//Activity LED 0 active high, out
 	ActLedPort&=~(1<<ActLedPin);
 	ActLedDdr|=(1<<ActLedPin);
 	UartInit(115200);
+	UartSendString("\x0D\x0A-----\x0D\x0A");
+	UartSendString("RX01 drive emulator for PDP-11 compatible computers.\x0D\x0A");
+	UartSendString("Tested with MC1201.02 and I4 boards.\x0D\x0A");
+	UartSendString("Created by Technomancer\x0D\x0A");
+	UartSendString("phantom.sannata.ru");
+	_delay_ms(100);
+	CliInit();
+
 	_delay_ms(1000);		//Startup delay
 	DxDonePort&=~(1<<DxDonePin);	//Ready to receive command
 
@@ -302,7 +320,7 @@ int main()
 
 				DxDriveSelected=((CommandTemp>>4)&0x01);	//Saves selected drive
 				DxCommand=((CommandTemp>>1)&7);			//Saves command
-				UartSend(DxCommand+0x30);			//Debug
+			//	UartSend(DxCommand+0x30);			//Debug
 			}
 
 			switch (DxCommand)
@@ -478,11 +496,17 @@ int main()
 			_delay_us(10);
 			ShiftOut(0b10000100);
 			ExitState();
-			UartSend(0x0A);
-			UartSend(0x0D);
-			UartSend('R');
-			UartSend('S');
-			UartSend('T');
+		//	UartSend(0x0A);
+		//	UartSend(0x0D);
+		//	UartSend('R');
+		//	UartSend('S');
+		//	UartSend('T');
+		}
+
+		if((UartFlags&(1<<UartRxFifoEmpty))==0)
+		{
+		unsigned char RxTempLoop=UartRxGetByte();
+		CliRoutine(RxTempLoop);
 		}
 	}
 }
@@ -510,14 +534,14 @@ unsigned char	ShiftInP(void)		//Function for shifting in commands and addresses 
 					//If there are no parity errors, parity LSB
 					//should always be 1.
 					//Parity is tested here
-	UartSend(0x0D);
-	UartSend(0x0A);
-	UartSend('P');
-	UartSend(' ');
+//	UartSend(0x0D);
+//	UartSend(0x0A);
+//	UartSend('P');
+//	UartSend(' ');
 	if((ParityBit&1)==1)
 	{
-		UartSend('O');		//Debug msg
-		UartSend('K');
+//		UartSend('O');		//Debug msg
+//		UartSend('K');
 		return ShiftData;
 	}
 	else

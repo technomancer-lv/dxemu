@@ -23,6 +23,7 @@ void	UartInit(unsigned long int UartBaudrate);
 void	UartSend(unsigned char UartData);
 char	UartRxGetByte(void);
 char	UartTxAddByte(unsigned char UartData);
+void    UartSendString(char UartString[]);
 
 #include	<avr/interrupt.h>
 #include	<avr/io.h>

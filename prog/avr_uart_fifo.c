@@ -29,6 +29,7 @@ void    UartInit(unsigned long int UartBaudrate)
 	UartSend('K');
 
 	//TODO: FIFO init and message here
+	UartSendString("\x0D\x0AUART FIFO OK");
 
 
 }
@@ -78,11 +79,16 @@ char	UartTxAddByte(unsigned char UartData)
 			return(0);
 			}
 		}
-	if(bit_is_set(UartFlags,UartTxFifoFull))
+	while(bit_is_set(UartFlags,UartTxFifoFull))
 		{
 		sei();
-		return(1);
 		}
+		cli();
+	//if(bit_is_set(UartFlags,UartTxFifoFull))
+	//	{
+	//	sei();
+	//	return(1);
+	//	}
 	TxBuff[UartTxFifoAddPoint]=UartData;
 	UartFlags &= ~(_BV(UartTxFifoEmpty));
 	if(UartTxFifoAddPoint==(TxBuffCount-1))
@@ -96,6 +102,17 @@ char	UartTxAddByte(unsigned char UartData)
 	sei();
 	return(0);
 	}
+
+void	UartSendString(char UartString[])
+{
+	unsigned int StringPointer=0;
+	while(UartString[StringPointer]!=0)
+	{
+		UartTxAddByte(UartString[StringPointer]);
+		StringPointer++;
+	}
+}
+
 
 
 ISR(USART_RX_vect)
