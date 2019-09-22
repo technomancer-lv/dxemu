@@ -27,6 +27,13 @@ void    UartInit(unsigned long int UartBaudrate)
 	UartSend(' ');
 	UartSend('O');
 	UartSend('K');
+	UartSend(' ');
+	UartSend('1');
+	UartSend('1');
+	UartSend('5');
+	UartSend('2');
+	UartSend('0');
+	UartSend('0');
 
 	//TODO: FIFO init and message here
 	UartSendString("\x0D\x0AUART FIFO OK");

@@ -31,7 +31,6 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "avr_uart_fifo.h"
-#include "cli_dxemu.h"
 
 //DX drive IO pin init
 //"Signal name in russian" (controller pin name) (I/O type)
@@ -143,6 +142,12 @@
 #define	ActLedDdr	DDRC
 #define	ActLedPin	2
 
+//Memory regions
+#define	Dx0MemStart	0x000000
+#define	Dx1MemStart	0x080000
+#define	Dx0BackupStart	0x100000
+#define	Dx1BackupStart	0x140000
+
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 					//0 - DX0
@@ -204,6 +209,7 @@ void		HexSend(unsigned char HexChar);
 
 unsigned char Xtransmit (unsigned char DriveNum);
 
+#include "cli_dxemu.h"
 
 
 // ProgramStart
@@ -604,8 +610,8 @@ unsigned char	SpiSend(unsigned char SpiData)		//Function for data receive/transm
 * Data map in ROM:
 000000-07FFFF:	DX0 disk
 080000-0FFFFF:	DX1 disk
-100000-17FFFF:	DY1 disk (?) (or maybe backup for DX?)
-180000-1FFFFF:	DY2 disk (?)
+100000-13FFFF:	backup for DX0
+140000-17FFFF:	backup for DX1
 
 DX disks populates only about half of 4MB assigned to each disk.
 Flash memory can be only erased by 4KB blocks, so there's need
@@ -613,6 +619,11 @@ for temporary storage when one of 32 emulated sectors located in
 flash memory block that is erased. So second half of DX0 disk is used
 as a blocks for temporary storage while changing one sector. So:
 040000-07FFFF:  64 temporary blocks
+
+Also, temporary location is used for temporary saving  image
+that's being received over serial line using Xmodem. After
+successfully receiving full image, it's copied to desired
+floppy area.
 */
 
 void		RomSetStatus(unsigned char RomStatus)	//Function that sets flash memory status byte
@@ -767,7 +778,7 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 		SpiSend(CopyAddr>>16);
 		SpiSend(CopyAddr>>8);
 		SpiSend(CopyAddr);
-							//Reads one sector (128 btes) info buffer
+							//Reads one sector (128 bytes) info buffer
 		for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
 		{
 			CopyArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
