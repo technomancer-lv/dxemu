@@ -146,7 +146,7 @@
 #define	Dx0MemStart	0x000000
 #define	Dx1MemStart	0x080000
 #define	Dx0BackupStart	0x100000
-#define	Dx1BackupStart	0x140000
+#define	Dx1BackupStart	0x180000
 
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
@@ -154,6 +154,8 @@ unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 					//1 - DX1
 					//2 - DY0
 					//3 - DY1
+
+unsigned char CopyArray[128];
 
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
@@ -180,6 +182,7 @@ unsigned char	TempBlockNum=0;
 
 unsigned char	SystemStatus=0;
 #define	DebugOn		0
+#define	DebugVerbose	1
 
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
@@ -202,7 +205,8 @@ void		RomEnWrite(void);
 void		RomEraseBlock(unsigned long int EraseBlockAddr);
 unsigned char 	RomRead(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
 unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector to flash memory
-
+void		RomSectorRead(unsigned long int SectorReadAddr,unsigned char SectorReadBuffer);
+void		RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteBuffer);
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		HexSend(unsigned char HexChar);
@@ -308,6 +312,8 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
+				if(SystemStatus&(1<<DebugOn))
+					UartSendString("\x0D\x0AC ");
 //				UartSend(0x0A);
 //				UartSend(0x0D);
 //				UartSend(' ');
@@ -608,10 +614,12 @@ unsigned char	SpiSend(unsigned char SpiData)		//Function for data receive/transm
 
 /*
 * Data map in ROM:
-000000-07FFFF:	DX0 disk
+000000-03FFFF:	DX0 disk
+040000-07FFFF:	Temporary data blocks (sectors)
 080000-0FFFFF:	DX1 disk
+040000-07FFFF:	Temporary data blocks (Xmodem)
 100000-13FFFF:	backup for DX0
-140000-17FFFF:	backup for DX1
+180000-1BFFFF:	backup for DX1
 
 DX disks populates only about half of 4MB assigned to each disk.
 Flash memory can be only erased by 4KB blocks, so there's need
@@ -680,6 +688,81 @@ void		RomEraseBlock(unsigned long int EraseBlockAddr)
 	while(RomGetStatus()&0x01);			//Waits for erase to complete
 }
 
+void RomSectorRead(unsigned long int SectorReadAddr,unsigned char SectorReadBuffer)
+{
+	//Read sector into buffer
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(2);
+	SpiSend(0x03);
+	SpiSend(SectorReadAddr>>16);
+	SpiSend(SectorReadAddr>>8);
+	SpiSend(SectorReadAddr);
+							//Reads one sector (128 bytes) info buffer
+	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
+	{
+		if(SectorReadBuffer==0)
+			CopyArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
+		else
+			DxArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
+
+	}
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(2);
+}
+
+void	RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteBuffer)
+{
+	RomEnWrite();
+
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(1);
+	SpiSend(0xAD);				//AAI write command
+	SpiSend(SectorWriteAddr>>16);
+	SpiSend(SectorWriteAddr>>8);
+	SpiSend(SectorWriteAddr);
+	if(SectorWriteBuffer==0)
+	{
+		SpiSend(CopyArray[0]);
+		SpiSend(CopyArray[1]);
+	}
+	else
+	{
+		SpiSend(DxArray[0]);
+		SpiSend(DxArray[1]);
+	}
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(1);
+	while(RomGetStatus()&0x01);
+
+		//CopyAddr+=2;
+
+	for(unsigned char RomProgLoop=1;RomProgLoop<64;RomProgLoop++)
+	{
+		SpiCePort&=~(1<<SpiCePin);
+		_delay_us(1);
+		SpiSend(0xAD);
+		if(SectorWriteBuffer==0)
+		{
+			SpiSend(CopyArray[RomProgLoop*2]);
+			SpiSend(CopyArray[(RomProgLoop*2)+1]);
+		}
+		else
+		{
+			SpiSend(DxArray[RomProgLoop*2]);
+			SpiSend(DxArray[(RomProgLoop*2)+1]);
+		}
+		SpiCePort|=(1<<SpiCePin);
+		_delay_us(1);
+		while(RomGetStatus()&0x01);
+	}
+	SpiCePort&=~(1<<SpiCePin);
+	_delay_us(1);
+	SpiSend(0x04);				//Disable write command
+	SpiCePort|=(1<<SpiCePin);
+	_delay_us(1);
+
+}
+
 unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char SecNum)	//Reads 128-byte sector from flash memory
 {
 	ActLedPort|=(1<<ActLedPin);
@@ -690,8 +773,8 @@ unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char 
         SecAddr*=128;
 	SecAddr+=(DiskNum*0x80000);
 
-
-	SpiCePort&=~(1<<SpiCePin);
+	RomSectorRead(SecAddr,1);
+/*	SpiCePort&=~(1<<SpiCePin);
 	_delay_us(2);
 	SpiSend(0x03);					//Read data command
 	SpiSend(SecAddr>>16);
@@ -704,7 +787,7 @@ unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char 
 		DxArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
 	}
 	SpiCePort|=(1<<SpiCePin);
-	_delay_us(2);
+	_delay_us(2);*/
 
 //	for(unsigned char i=0;i<128;i++)
 //		UartSend(DxArray[i]);
@@ -716,17 +799,17 @@ unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char 
 
 void HexSend(unsigned char HexChar)			//Function for transmitting debug data in human readable form
 {
-unsigned char HexTemp=(HexChar>>4);
-if(HexTemp>9)
-	UartSend(HexTemp+55);
-else
-	UartSend(HexTemp+0x30);
+	unsigned char HexTemp=(HexChar>>4);
+	if(HexTemp>9)
+		UartTxAddByte(HexTemp+55);
+	else
+		UartTxAddByte(HexTemp+0x30);
 
-HexTemp=(HexChar&0x0F);
-if(HexTemp>9)
-	UartSend(HexTemp+55);
-else
-	UartSend(HexTemp+0x30);
+	HexTemp=(HexChar&0x0F);
+	if(HexTemp>9)
+		UartTxAddByte(HexTemp+55);
+	else
+		UartTxAddByte(HexTemp+0x30);
 }
 
 
@@ -762,7 +845,6 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 	RomEraseBlock(TempBlockAddr);			//Erases temporary block to copy data to 
 
 	//Copy block that contains sector to be written to TempBlock
-	unsigned char CopyArray[128];
 	unsigned long int CopyAddr=0;
 							//4KB block contains 32 sectors, so it copies 
 							//it 128 bytes at a time in 32 cycles
@@ -771,23 +853,9 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 	{
 		CopyAddr=BlockAddr+(128*CopyLoop);
 
-		//Read sector into buffer
-		SpiCePort&=~(1<<SpiCePin);
-		_delay_us(2);
-		SpiSend(0x03);
-		SpiSend(CopyAddr>>16);
-		SpiSend(CopyAddr>>8);
-		SpiSend(CopyAddr);
-							//Reads one sector (128 bytes) info buffer
-		for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
-		{
-			CopyArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
-		}
-		SpiCePort|=(1<<SpiCePin);
-		_delay_us(2);
+		RomSectorRead(CopyAddr,0);		//Read 128 bytes into buffer
 
 		CopyAddr=TempBlockAddr+(128*CopyLoop);
-
 							//Writes one sector to temporary block
 		RomEnWrite();
 

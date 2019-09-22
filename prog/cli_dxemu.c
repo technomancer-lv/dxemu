@@ -103,26 +103,40 @@ void    CliRoutine(unsigned char CliData)
 								//Erase backup region
 								RomEnWrite();
 
-								unsigned long int EraseAddr=BackupDriveNumber;
-								EraseAddr=EraseAddr*0x40000;
-								EraseAddr+=0x100000;
+								unsigned long int BackupAddr=BackupDriveNumber;
+								BackupAddr=BackupAddr*0x80000;
+								BackupAddr+=0x100000;
+								UartSendString("Erasing...\x0D\x0A");
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
 								{
-								/*	UartSendString("Erasing 0x");
-									UartTxAddByte(((EraseAddr>>20)&0x0F)+0x30);
-									UartTxAddByte(((EraseAddr>>16)&0x0F)+0x30);
-									UartTxAddByte(((EraseAddr>>12)&0x0F)+0x30);
-									UartTxAddByte(((EraseAddr>>8)&0x0F)+0x30);
-									UartTxAddByte(((EraseAddr>>4)&0x0F)+0x30);
-									UartTxAddByte(((EraseAddr)&0x0F)+0x30);
+									/*UartSendString("Erasing 0x");
+									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
 									UartSendString("\x0D\x0A");*/
-									RomEraseBlock(EraseAddr);
-									EraseAddr+=0x1000;
+									RomEraseBlock(BackupAddr);
+									BackupAddr+=0x1000;
 								}
+								UartSendString("Previous backup erased\x0D\x0A");
+								UartSendString("Copying...\x0D\x0A");
+
 								//Copy image, sector by sector
 
-								UartSendString("Done\x0D\x0A");
+								BackupAddr=BackupDriveNumber;
+								BackupAddr=BackupAddr*0x80000;
+
+								for(unsigned int BackupCopyLoop=0;BackupCopyLoop<2048;BackupCopyLoop++)
+								{
+									RomSectorRead(BackupAddr,0);
+									RomSectorWrite(BackupAddr+0x100000,0);
+									BackupAddr+=0x80;
+								}
+
+								UartSendString("Done\x0D\x0A\x0D\x0A");
 								UartSendString(">");
 							}
 							else
@@ -139,9 +153,56 @@ void    CliRoutine(unsigned char CliData)
 					{
                                                 if(CliBufferPointer==2)
                                                 {
-				       			UartSendString("\x0D\x0A");
-							UartSendString("RESTORE\x0D\x0A");
-							UartSendString(">");
+							if((CliBuffer[1]==0x30)|(CliBuffer[1]==0x31))
+							{
+								UartSendString("\x0D\x0A");
+								UartSendString("Restoring RX");
+								UartTxAddByte(CliBuffer[1]);
+								UartSendString(" image from backup...\x0D\x0A");
+
+								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
+
+								//Erase backup region
+								RomEnWrite();
+
+								unsigned long int BackupAddr=BackupDriveNumber;
+								BackupAddr=BackupAddr*0x80000;
+								//BackupAddr+=0x100000;
+								UartSendString("Erasing ...\x0D\x0A");
+
+								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
+								{
+									/*UartSendString("Erasing 0x");
+									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
+									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
+									UartSendString("\x0D\x0A");*/
+									RomEraseBlock(BackupAddr);
+									BackupAddr+=0x1000;
+								}
+								UartSendString("Floppy image erased\x0D\x0A");
+								UartSendString("Copying...\x0D\x0A");
+
+								//Copy image, sector by sector
+
+								BackupAddr=BackupDriveNumber;
+								BackupAddr=BackupAddr*0x80000;
+
+								for(unsigned int BackupCopyLoop=0;BackupCopyLoop<2048;BackupCopyLoop++)
+								{
+									RomSectorRead(BackupAddr+0x100000,0);
+									RomSectorWrite(BackupAddr,0);
+									BackupAddr+=0x80;
+								}
+
+								UartSendString("Done\x0D\x0A\x0D\x0A");
+								UartSendString(">");
+							}
+							else
+								IncorrectDrive();
 						}
 						else
 							UnknownCommand();
@@ -155,11 +216,66 @@ void    CliRoutine(unsigned char CliData)
                                                 if(CliBufferPointer==2)
                                                 {
 				       			UartSendString("\x0D\x0A");
-							UartSendString("DEBUG\x0D\x0A");
-							UartSendString(">");
+							switch(CliBuffer[1])
+							{
+								case '0':
+								{
+									SystemStatus&=~((1<<DebugOn)|(1<<DebugVerbose));
+									UartSendString("Debug off\x0D\x0A");
+									break;
+								}
+
+								case '1':
+								{
+									SystemStatus&=~(1<<DebugVerbose);
+									SystemStatus|=(1<<DebugOn);
+									UartSendString("Debug on\x0D\x0A");
+									break;
+								}
+
+								case '2':
+								{
+									SystemStatus|=((1<<DebugOn)|(1<<DebugVerbose));
+									UartSendString("Verbose debug on\x0D\x0A");
+									break;
+								}
+
+								default:
+								{
+									UartSendString("INCORRECT DEBUG SETTING\x0D\x0A");
+									break;
+								}
+
+							}
+							UartSendString("\x0D\x0A>");
 						}
 						else
 							UnknownCommand();
+						break;
+					}
+
+					//Tests
+					case 's':
+					{
+					/*	UartSendString("\x0D\x0A");
+						RomSectorRead(0x1000,0);
+						for (unsigned int testvar=0;testvar<128;testvar++)
+						{
+							HexSend(CopyArray[testvar]);
+							UartTxAddByte(' ');
+							if((testvar&7)==7)
+								UartSendString("\x0D\x0A");
+						}
+						UartSendString("\x0D\x0A");
+						RomSectorRead(0x101000,0);
+						for (unsigned int testvar=0;testvar<128;testvar++)
+						{
+							HexSend(CopyArray[testvar]);
+							UartTxAddByte(' ');
+							if((testvar&7)==7)
+								UartSendString("\x0D\x0A");
+						}
+						UartSendString("\x0D\x0A>");*/
 						break;
 					}
 
@@ -178,6 +294,7 @@ void    CliRoutine(unsigned char CliData)
 		        			UartSendString("r1 - restore RX1 image from backup\x0D\x0A");
 		        			UartSendString("d0 - disable debug\x0D\x0A");
 		        			UartSendString("d1 - enable debug\x0D\x0A");
+		        			UartSendString("d2 - enable verbose debug\x0D\x0A");
 		        			UartSendString("v - show version\x0D\x0A\x0D\x0A");
 						UartSendString(">");
 						break;
@@ -215,9 +332,12 @@ void    CliRoutine(unsigned char CliData)
 		{
 			if(CliBufferPointer<(CliBufferMax))
 			{
-				UartTxAddByte(CliData);
-				CliBuffer[CliBufferPointer]=CliData;
-				CliBufferPointer++;
+				if(CliData>=0x20)
+				{
+					UartTxAddByte(CliData);
+					CliBuffer[CliBufferPointer]=CliData;
+					CliBufferPointer++;
+				}
 			}
 			else
 			{
