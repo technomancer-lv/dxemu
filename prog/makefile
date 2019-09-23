@@ -6,9 +6,12 @@ OBJCOPY=avr-objcopy
 CFLAGS=-std=c99 -Wall -g -Os -mmcu=${MCU} -DF_CPU=${F_CPU} -I.
 TARGET=dxemu_m328p_latest
 SRCS=main.c
+BUILD_NUMBER_FILE=build_number.txt
 
 all:
 	clear
+	if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
+	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
 	${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
 

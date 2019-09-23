@@ -29,9 +29,10 @@ void    CliRoutine(unsigned char CliData)
 							//TO DO - store bootloader and software version somewhere it can be read from here
 							//TO DO - automatically add build number, date and time
 				       			UartSendString("\x0D\x0A");
-							UartSendString("PCB v0.1\x0D\x0A");
+							UartSendString("PCB v1.0\x0D\x0A");
 							UartSendString("BLD v0.1\x0D\x0A");
 							UartSendString("SW  v0.1\x0D\x0A");
+							UartSendString("SN  301\x0D\x0A");
 							UartSendString(">");
 						}
 						else
@@ -101,7 +102,7 @@ void    CliRoutine(unsigned char CliData)
 								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
 
 								//Erase backup region
-								RomEnWrite();
+							//	RomEnWrite();
 
 								unsigned long int BackupAddr=BackupDriveNumber;
 								BackupAddr=BackupAddr*0x80000;
@@ -110,14 +111,15 @@ void    CliRoutine(unsigned char CliData)
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
 								{
-									/*UartSendString("Erasing 0x");
+									UartSendString("Erasing 0x");
 									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
-									UartSendString("\x0D\x0A");*/
+									UartSendString("\x0D\x0A");
+									RomEnWrite();
 									RomEraseBlock(BackupAddr);
 									BackupAddr+=0x1000;
 								}
@@ -163,7 +165,7 @@ void    CliRoutine(unsigned char CliData)
 								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
 
 								//Erase backup region
-								RomEnWrite();
+								//RomEnWrite();
 
 								unsigned long int BackupAddr=BackupDriveNumber;
 								BackupAddr=BackupAddr*0x80000;
@@ -172,14 +174,15 @@ void    CliRoutine(unsigned char CliData)
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
 								{
-									/*UartSendString("Erasing 0x");
+									UartSendString("Erasing 0x");
 									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
-									UartSendString("\x0D\x0A");*/
+									UartSendString("\x0D\x0A");
+									RomEnWrite();
 									RomEraseBlock(BackupAddr);
 									BackupAddr+=0x1000;
 								}
@@ -257,8 +260,8 @@ void    CliRoutine(unsigned char CliData)
 					//Tests
 					case 's':
 					{
-					/*	UartSendString("\x0D\x0A");
-						RomSectorRead(0x1000,0);
+						UartSendString("\x0D\x0A");
+						RomSectorRead(0x81000,0);
 						for (unsigned int testvar=0;testvar<128;testvar++)
 						{
 							HexSend(CopyArray[testvar]);
@@ -267,7 +270,7 @@ void    CliRoutine(unsigned char CliData)
 								UartSendString("\x0D\x0A");
 						}
 						UartSendString("\x0D\x0A");
-						RomSectorRead(0x101000,0);
+						RomSectorRead(0x181000,0);
 						for (unsigned int testvar=0;testvar<128;testvar++)
 						{
 							HexSend(CopyArray[testvar]);
@@ -275,7 +278,7 @@ void    CliRoutine(unsigned char CliData)
 							if((testvar&7)==7)
 								UartSendString("\x0D\x0A");
 						}
-						UartSendString("\x0D\x0A>");*/
+						UartSendString("\x0D\x0A>");
 						break;
 					}
 

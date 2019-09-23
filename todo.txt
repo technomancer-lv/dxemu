@@ -1,14 +1,12 @@
 Prog:
   Xmodem for uploading/downloading disk images
-  Possible backup functionality to save working images to unused flash memory regions
+  _Possible backup functionality to save working images to unused flash memory regions
   Smaller todo steps are marked in the beginning and all over program source
   Test why I4 controller is not loading stable and is ruining disk image
   Test why bootloader is not verifying correctly (but works)
 
 Mechanical:
-  Design protective plastic to prevent short circuits to computer board frame.
-    Two pieces of plastics, one with cutouts, one as cover.
-    1,5mm thick, clear lasercut plexiglass
+  Fix plastics prt issue (non critical)
   
 Electrical:
   Make it work with I4 board and test with MC again

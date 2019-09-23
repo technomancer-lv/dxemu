@@ -437,31 +437,16 @@ int main()
 							case 2:
 							case 6:
 							{
-							//	UartSend('W');
-							//	UartSend((TrackAddr&0x0F)+0x30);
-							//	UartSend((SecAddr&0x0F)+0x30);
-
 								RomWrite(DxDriveSelected,TrackAddr,SecAddr);
-
-							//	_delay_ms(50);
-
 								break;
 							}
 
 							case 3:
 							{
 								RomRead(DxDriveSelected,TrackAddr,SecAddr);
-
-								//Old storage emulation over serial
-							//	UartSend('R');
-							//	UartSend((TrackAddr&0x0F)+0x30);
-							//	UartSend((SecAddr&0x0F)+0x30);
-
 								break;
 							}
-
 						}
-
 						ExitState();
 					}
 					break;
@@ -500,7 +485,7 @@ int main()
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
 			//Fill buffer with drive 0 track 1 sector 0
-			//TODO: make reset edge sensitive
+			//TO DO: make reset edge sensitive
 			RomRead(0,1,0);
 			DxDonePort|=(1<<DxDonePin);
 			_delay_ms(100);
