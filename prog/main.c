@@ -312,12 +312,10 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
-				if(SystemStatus&(1<<DebugOn))
-					UartSendString("\x0D\x0AC ");
-//				UartSend(0x0A);
-//				UartSend(0x0D);
-//				UartSend(' ');
-//				UartSend('C');				//Debug
+				//if(SystemStatus&(1<<DebugOn))
+				//	UartSendString("\x0D\x0AC ");
+				//	UartSendString("C");
+
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
 				DxErrPort|=(1<<DxErrPin);	//Clears error signal
@@ -661,6 +659,7 @@ void		RomEnWrite(void)			//Function enables flash memory write
 							//Erase block in flash memory.
 void		RomEraseBlock(unsigned long int EraseBlockAddr)
 {
+	RomEnWrite();
 	while(RomGetStatus()&0x01);			//Waits another write to complete
 	SpiCePort&=~(1<<SpiCePin);
 	_delay_us(2);

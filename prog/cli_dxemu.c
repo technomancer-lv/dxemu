@@ -57,10 +57,71 @@ void    CliRoutine(unsigned char CliData)
 									UartSendString("Sending RX");
 									UartTxAddByte(CliBuffer[2]);
 									UartSendString(" image over Xmodem...");
+									unsigned char XDriveNumber=(CliBuffer[2]&1);
+									while(1)
+									{
+										HexSend(UartFlags);
+									//	UartTxAddByte(' ');
+										if((UartFlags&(1<<UartRxFifoEmpty))==0)
+										{
+											unsigned char NakTest=UartRxGetByte();
+											HexSend(NakTest);
+											UartTxAddByte(' ');
+											if(NakTest==0x15)
+												break;
+										}
+									}
 
+									unsigned char PacketNumber=1;
+									unsigned char PacketCrc=0;
+									unsigned long int SectorAddr=XDriveNumber;
+									SectorAddr=(SectorAddr*80000);
+										UartTxAddByte(0x0D);
+										UartTxAddByte(0x0A);
 
+									for(unsigned int Xloop=0;Xloop<2048;Xloop++)
+									{
+										PacketCrc=0;
+										RomSectorRead(SectorAddr,0);
+										HexSend(0x01);
+										UartTxAddByte(0x20);
+									//	UartTxAddByte(0x01);
+										HexSend(PacketNumber);
+										UartTxAddByte(0x20);
 
+										HexSend(255-PacketNumber);
+										UartTxAddByte(0x0D);
+										UartTxAddByte(0x0A);
 
+									//	UartTxAddByte(PacketNumber);
+									//	UartTxAddByte(255-PacketNumber);
+										for (unsigned char XByteLoop=0;XByteLoop<128;XByteLoop++)
+										{
+										HexSend(CopyArray[XByteLoop]);
+										UartTxAddByte(0x20);
+
+										if((XByteLoop&7)==7)
+										{
+										UartTxAddByte(0x0D);
+										UartTxAddByte(0x0A);
+										}
+										//	UartTxAddByte(CopyArray[XByteLoop]);
+											PacketCrc+=CopyArray[XByteLoop];
+										}
+									//	UartTxAddByte(PacketCrc);
+										HexSend(PacketCrc);
+										UartTxAddByte(0x0D);
+										UartTxAddByte(0x0A);
+
+									//	while(1);
+
+										SectorAddr+=0x80;
+										PacketNumber++;
+									}
+
+									HexSend(0x04);
+
+									UartSendString("Done\x0D\x0A");
 									UartSendString("\x0D\x0A");
 									UartSendString(">");
 									break;
@@ -111,15 +172,15 @@ void    CliRoutine(unsigned char CliData)
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
 								{
-									UartSendString("Erasing 0x");
+									/*UartSendString("Erasing 0x");
 									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
-									UartSendString("\x0D\x0A");
-									RomEnWrite();
+									UartSendString("\x0D\x0A");*/
+									//RomEnWrite();
 									RomEraseBlock(BackupAddr);
 									BackupAddr+=0x1000;
 								}
@@ -174,15 +235,15 @@ void    CliRoutine(unsigned char CliData)
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
 								{
-									UartSendString("Erasing 0x");
+								/*	UartSendString("Erasing 0x");
 									UartTxAddByte(((BackupAddr>>20)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>16)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>12)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>8)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr>>4)&0x0F)+0x30);
 									UartTxAddByte(((BackupAddr)&0x0F)+0x30);
-									UartSendString("\x0D\x0A");
-									RomEnWrite();
+									UartSendString("\x0D\x0A");*/
+									//RomEnWrite();
 									RomEraseBlock(BackupAddr);
 									BackupAddr+=0x1000;
 								}
