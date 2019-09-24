@@ -24,6 +24,7 @@ void	UartSend(unsigned char UartData);
 char	UartRxGetByte(void);
 char	UartTxAddByte(unsigned char UartData);
 void    UartSendString(char UartString[]);
+unsigned char	UartIsBufferEmpty(void);
 
 #include	<avr/interrupt.h>
 #include	<avr/io.h>

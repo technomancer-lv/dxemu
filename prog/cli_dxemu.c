@@ -58,15 +58,14 @@ void    CliRoutine(unsigned char CliData)
 									UartTxAddByte(CliBuffer[2]);
 									UartSendString(" image over Xmodem...");
 									unsigned char XDriveNumber=(CliBuffer[2]&1);
+
 									while(1)
 									{
-										HexSend(UartFlags);
-									//	UartTxAddByte(' ');
-										if((UartFlags&(1<<UartRxFifoEmpty))==0)
+										unsigned char BuffTest=UartIsBufferEmpty();
+										_delay_ms(1);
+										if(BuffTest==0)
 										{
 											unsigned char NakTest=UartRxGetByte();
-											HexSend(NakTest);
-											UartTxAddByte(' ');
 											if(NakTest==0x15)
 												break;
 										}
@@ -76,51 +75,47 @@ void    CliRoutine(unsigned char CliData)
 									unsigned char PacketCrc=0;
 									unsigned long int SectorAddr=XDriveNumber;
 									SectorAddr=(SectorAddr*80000);
-										UartTxAddByte(0x0D);
-										UartTxAddByte(0x0A);
 
-									for(unsigned int Xloop=0;Xloop<2048;Xloop++)
+									// 77 tracks, 26 sectors per track makes 2002 overall sectors
+								//	for(unsigned int Xloop=0;Xloop<2002;Xloop++)
+									for(unsigned int Xloop=0;Xloop<2002;Xloop++)
 									{
+									//	_delay_ms(1);
 										PacketCrc=0;
 										RomSectorRead(SectorAddr,0);
-										HexSend(0x01);
-										UartTxAddByte(0x20);
-									//	UartTxAddByte(0x01);
-										HexSend(PacketNumber);
-										UartTxAddByte(0x20);
 
-										HexSend(255-PacketNumber);
-										UartTxAddByte(0x0D);
-										UartTxAddByte(0x0A);
+										UartTxAddByte(0x01);
 
-									//	UartTxAddByte(PacketNumber);
-									//	UartTxAddByte(255-PacketNumber);
+										UartTxAddByte(PacketNumber);
+										UartTxAddByte(0xFF-PacketNumber);
 										for (unsigned char XByteLoop=0;XByteLoop<128;XByteLoop++)
 										{
-										HexSend(CopyArray[XByteLoop]);
-										UartTxAddByte(0x20);
-
-										if((XByteLoop&7)==7)
-										{
-										UartTxAddByte(0x0D);
-										UartTxAddByte(0x0A);
-										}
-										//	UartTxAddByte(CopyArray[XByteLoop]);
+											UartTxAddByte(CopyArray[XByteLoop]);
 											PacketCrc+=CopyArray[XByteLoop];
 										}
-									//	UartTxAddByte(PacketCrc);
-										HexSend(PacketCrc);
-										UartTxAddByte(0x0D);
-										UartTxAddByte(0x0A);
+										UartTxAddByte(PacketCrc);
 
-									//	while(1);
+										while(1)
+										{
+											unsigned char BuffTest=UartIsBufferEmpty();
+											_delay_ms(1);
+											if(BuffTest==0)
+											{
+												unsigned char AckTest=UartRxGetByte();
+												if(AckTest==0x06)
+													break;
+											}
+										}
+
+									//TO DO - make ASCII control code include?
 
 										SectorAddr+=0x80;
 										PacketNumber++;
 									}
 
-									HexSend(0x04);
-
+								//	_delay_ms(500);
+									UartTxAddByte(0x04);
+									_delay_ms(2000);
 									UartSendString("Done\x0D\x0A");
 									UartSendString("\x0D\x0A");
 									UartSendString(">");

@@ -120,7 +120,10 @@ void	UartSendString(char UartString[])
 	}
 }
 
-
+unsigned char   UartIsBufferEmpty(void)
+{
+	return (UartFlags&(1<<UartRxFifoEmpty));
+}
 
 ISR(USART_RX_vect)
 	{
