@@ -184,6 +184,9 @@ unsigned char	SystemStatus=0;
 #define	DebugOn		0
 #define	DebugVerbose	1
 
+unsigned char DxTimeout=0;
+unsigned int XmodemTimeout=0;
+
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
 							//from the controller. 0xFF - parity error
@@ -282,10 +285,19 @@ int main()
 	SPCR=0b01010000;	//mode0, fosc/2
 	SPSR=0b00000001;	//SPI2X=1
 
+	//TIMER1 init
+	TCCR1A=0b00000000;	//Normal port operation, CTC mode
+	TCCR1B=0b00001100;	//CTC mode,Fclk/256
+	TCCR1C=0b00000000;
+
+	OCR1A=5759;		//Period of 0,1s=14,7456MHz/256/5760
+
+	TIMSK1=0b00000010;
+
 	//INT init
 	sei();
 
-
+	//TO DO - use both activity LEDs
 	//Activity LED 0 active high, out
 	ActLedPort&=~(1<<ActLedPin);
 	ActLedDdr|=(1<<ActLedPin);
@@ -994,3 +1006,11 @@ unsigned char Xtransmit (unsigned char DriveNum)
 
 	return 0;
 }
+
+//Timer INT, executes 10x in one second
+ISR(TIMER1_COMPA_vect)
+{
+	DxTimeout++;
+	XmodemTimeout++;
+}
+

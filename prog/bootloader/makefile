@@ -12,6 +12,8 @@ OPTIMIZE   = -Os
 DEFS       =
 LIBS       =
 
+BUILD_NUMBER_FILE=build_number.txt
+
 CC         = avr-gcc
 
 # Override is only needed by avr-lib build system.
@@ -42,6 +44,10 @@ isp: $(TARGET)
 	$(ISPFLASH)
 
 %.elf: $(OBJ)
+	clear
+	if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
+	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
+	date "+%d-%m-%Y %H:%M" > build_date.txt
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
