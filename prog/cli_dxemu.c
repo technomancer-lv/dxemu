@@ -83,7 +83,7 @@ void    CliRoutine(unsigned char CliData)
 									while(1)
 									{
 										unsigned char BuffTest=UartIsBufferEmpty();
-										_delay_ms(1);
+										_delay_us(1);
 										if(BuffTest==0)
 										{
 											unsigned char NakTest=UartRxGetByte();
@@ -95,7 +95,7 @@ void    CliRoutine(unsigned char CliData)
 									unsigned char PacketNumber=1;
 									unsigned char PacketCrc=0;
 									unsigned long int SectorAddr=XDriveNumber;
-									SectorAddr=(SectorAddr*80000);
+									SectorAddr=(SectorAddr*0x80000);
 
 									// 77 tracks, 26 sectors per track makes 2002 overall sectors
 									for(unsigned int Xloop=0;Xloop<2002;Xloop++)
@@ -151,16 +151,13 @@ void    CliRoutine(unsigned char CliData)
 									unsigned char XDriveNumber=(CliBuffer[2]&1);
 
 
-								unsigned long int SectorAddr=0xC0000;
+									unsigned long int SectorAddr=0xC0000;
 
-								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
-								{
-									RomEraseBlock(SectorAddr);
-									SectorAddr+=0x1000;
-								}
-
-
-
+									for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
+									{
+										RomEraseBlock(SectorAddr);
+										SectorAddr+=0x1000;
+									}
 
 									XmodemTimeout=0;
 									UartTxAddByte(0x15);
@@ -184,7 +181,6 @@ void    CliRoutine(unsigned char CliData)
 
 									unsigned int PreferredPacketNum=1;
 									SectorAddr=0xC0000;
-								//	unsigned char PreferredCrc=0;
 									unsigned char XmodemTransferStatus=0;
 									#define		TransferInProcess	0
 									#define		TransferSectorOk	1
@@ -196,8 +192,8 @@ void    CliRoutine(unsigned char CliData)
 									#define		TransferTooLong		7
 									#define		TransferTooShort	8
 									#define		TransferExit		9
+									#define		TransferCancelled	10
 
-								//	for(unsigned int Xloop=0;Xloop<2002;Xloop++)
 									while(1)
 									{
 										unsigned char PreferredCrc=0;
@@ -215,20 +211,30 @@ void    CliRoutine(unsigned char CliData)
 												{
 													case 0:
 													{
-														if(XRecByte==0x01)
+														switch(XRecByte)
 														{
-															ReceivedBytes++;
-															XmodemTransferStatus=TransferInProcess;
-														}
-														else
-														{
-															if(XRecByte==0x04)
+															case 0x01:
 															{
-																XmodemTransferStatus=TransferCompleted;
+																ReceivedBytes++;
+																XmodemTransferStatus=TransferInProcess;
+																break;
 															}
-															else
+
+															case 0x03:
 															{
-																XmodemTransferStatus=TransferNoSoh;
+																XmodemTransferStatus=TransferCancelled;
+																break;
+															}
+
+															case 0x04:
+															{
+																if(PreferredPacketNum<2002)
+																{
+																	XmodemTransferStatus=TransferTooShort;
+																}
+																else
+																	XmodemTransferStatus=TransferCompleted;
+																break;
 															}
 														}
 
@@ -273,8 +279,6 @@ void    CliRoutine(unsigned char CliData)
 													{
 														if(PreferredCrc==XRecByte)
 														{
-															//TO DO - protect write so it doesn't go out of tem array boundaries, otherwise backup will be damaged
-															//TO DO - TransferFault can be set if file size exceeds desired
 															if(PreferredPacketNum>=2003)
 															{
 																UartTxAddByte(0x15);
@@ -309,17 +313,12 @@ void    CliRoutine(unsigned char CliData)
 										{
 											case TransferCompleted:
 											{
-												//TO DO - check received file length (2002 * 128 bytes)
-												//TO DO - copy temporary array to working array
-												
-												
+												//TO DO - clear up this messed up region
+												//TO DO - make image copy function
 								//Erase backup region
-								//RomEnWrite();
 
 								unsigned long int RestoreOffset=XDriveNumber;
 								RestoreOffset=RestoreOffset*0x80000;
-								//BackupAddr+=0x100000;
-								//UartSendString("Erasing ...\x0D\x0A");
 
 								unsigned long int SectorAddr=0;
 
@@ -339,11 +338,6 @@ void    CliRoutine(unsigned char CliData)
 									SectorAddr+=0x80;
 								}
 
-												
-												
-												
-												
-												
 												UartTxAddByte(0x06);
 												_delay_ms(1000);
 												UartSendString("Done\x0D\x0A");
@@ -450,11 +444,9 @@ void    CliRoutine(unsigned char CliData)
 								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
 
 								//Erase backup region
-								//RomEnWrite();
 
 								unsigned long int BackupAddr=BackupDriveNumber;
 								BackupAddr=BackupAddr*0x80000;
-								//BackupAddr+=0x100000;
 								UartSendString("Erasing ...\x0D\x0A");
 
 								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
