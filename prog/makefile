@@ -20,6 +20,10 @@ all:
 flash_isp:
 	avrdude -p ${MCU} -c atmelice_isp -U flash:w:${TARGET}.hex:i -F -P usb -B 2
 
+reset:
+	avrdude -p ${MCU} -c atmelice_isp -F -P usb -B 2
+
+
 flash_bld:
 	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 57600 -D -U flash:w:${TARGET}.hex:i
 

@@ -536,6 +536,16 @@ void    CliRoutine(unsigned char CliData)
 					case 's':
 					{
 						UartSendString("\x0D\x0A");
+						UartSendString("0x00000\x0D\x0A");
+						RomSectorRead(0x000000,0);
+						for (unsigned int testvar=0;testvar<128;testvar++)
+						{
+							HexSend(CopyArray[testvar]);
+							UartTxAddByte(' ');
+							if((testvar&7)==7)
+								UartSendString("\x0D\x0A");
+						}
+						UartSendString("\x0D\x0A");
 						UartSendString("0x80000\x0D\x0A");
 						RomSectorRead(0x080000,0);
 						for (unsigned int testvar=0;testvar<128;testvar++)
