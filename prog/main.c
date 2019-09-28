@@ -2,7 +2,7 @@
 *	floppy disk drives
 *
 *	CPU:	ATMega328
-*	F_CLK:
+*	F_CLK:	14,7456MHz
 *
 *	Fuses:
 *
@@ -14,16 +14,9 @@
 *		Write marked sectors
 *		Add 12bit compatibility at least in hardware
 *		Parity check (in progress)
-*		Interrupts
-*		Sleep mode
-*		CLI
-*		Xmodem disk image transfer
-*		Activity LED only flashing. Or ultra low power LED.
-*		Welcome message
 *		Function time-outs
-*		Divide code to separate files
+*		Divide code into separate files
 *		Statistics - command tyoe count, error count
-*		Simple setup parameters - power saving, etc
 *
 */
 
@@ -140,13 +133,18 @@
 #define	ActLedPort	PORTC
 #define	ActLedIn	PINC
 #define	ActLedDdr	DDRC
-#define	ActLedPin	2
+#define	ActLed0Pin	3
+#define	ActLed1Pin	2
 
 //Memory regions
 #define	Dx0MemStart	0x000000
+#define	CopyMemStart	0x040000
 #define	Dx1MemStart	0x080000
+#define	XmodemMemStart	0x0C0000
 #define	Dx0BackupStart	0x100000
 #define	Dx1BackupStart	0x180000
+
+//TO DO - change all mem offsets with these defines
 
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
@@ -206,10 +204,13 @@ void		RomSetStatus(unsigned char RomStatus);
 unsigned char	RomGetStatus(void);
 void		RomEnWrite(void);
 void		RomEraseBlock(unsigned long int EraseBlockAddr);
+void		RomEraseImage(unsigned long int EraseBlockAddr);
 unsigned char 	RomRead(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Reads 128-byte sector from flash memory
 unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum);	//Writes 128-byte sector to flash memory
 void		RomSectorRead(unsigned long int SectorReadAddr,unsigned char SectorReadBuffer);
 void		RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteBuffer);
+void		RomCopyImage(unsigned long int ImageSourceAddr,unsigned long int ImageDestAddr);
+
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		HexSend(unsigned char HexChar);
@@ -297,10 +298,12 @@ int main()
 	//INT init
 	sei();
 
-	//TO DO - use both activity LEDs
 	//Activity LED 0 active high, out
-	ActLedPort&=~(1<<ActLedPin);
-	ActLedDdr|=(1<<ActLedPin);
+	ActLedPort&=~(1<<ActLed0Pin);
+	ActLedPort&=~(1<<ActLed1Pin);
+	ActLedDdr|=(1<<ActLed0Pin);
+	ActLedDdr|=(1<<ActLed1Pin);
+
 	UartInit(115200);
 	UartSendString("\x0D\x0A-----\x0D\x0A");
 	UartSendString("RX01 drive emulator for PDP-11 compatible computers.\x0D\x0A");
@@ -684,6 +687,15 @@ void		RomEraseBlock(unsigned long int EraseBlockAddr)
 	while(RomGetStatus()&0x01);			//Waits for erase to complete
 }
 
+void		RomEraseImage(unsigned long int EraseBlockAddr)
+{
+	for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
+	{
+        	RomEraseBlock(EraseBlockAddr);
+		EraseBlockAddr+=0x1000;
+	}
+}
+
 void RomSectorRead(unsigned long int SectorReadAddr,unsigned char SectorReadBuffer)
 {
 	//Read sector into buffer
@@ -730,8 +742,6 @@ void	RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteB
 	_delay_us(1);
 	while(RomGetStatus()&0x01);
 
-		//CopyAddr+=2;
-
 	for(unsigned char RomProgLoop=1;RomProgLoop<64;RomProgLoop++)
 	{
 		SpiCePort&=~(1<<SpiCePin);
@@ -759,36 +769,34 @@ void	RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteB
 
 }
 
+void		RomCopyImage(unsigned long int ImageSourceAddr,unsigned long int ImageDestAddr)
+{
+	RomEraseImage(ImageDestAddr);
+	for(unsigned int CopyLoop=0;CopyLoop<2048;CopyLoop++)
+	{
+		RomSectorRead(ImageSourceAddr,0);
+		RomSectorWrite(ImageDestAddr,0);
+		ImageSourceAddr+=0x80;
+		ImageDestAddr+=0x80;
+	}
+}
+
+
 unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char SecNum)	//Reads 128-byte sector from flash memory
 {
-	ActLedPort|=(1<<ActLedPin);
-
-							//Calculates start address of desired sector
+	if(DiskNum==0)
+		ActLedPort|=(1<<ActLed0Pin);
+	else
+		ActLedPort|=(1<<ActLed1Pin);
+	//Calculates start address of desired sector
         unsigned long int SecAddr=((TrkNum*26));
         SecAddr+=SecNum;
         SecAddr*=128;
 	SecAddr+=(DiskNum*0x80000);
 
 	RomSectorRead(SecAddr,1);
-/*	SpiCePort&=~(1<<SpiCePin);
-	_delay_us(2);
-	SpiSend(0x03);					//Read data command
-	SpiSend(SecAddr>>16);
-	SpiSend(SecAddr>>8);
-	SpiSend(SecAddr);
 
-							//Reads 128 bytes of data
-	for(unsigned char RomReadLoop=0;RomReadLoop<128;RomReadLoop++)
-	{
-		DxArray[RomReadLoop]=SpiSend(0);	//Read from flash byte by byte
-	}
-	SpiCePort|=(1<<SpiCePin);
-	_delay_us(2);*/
-
-//	for(unsigned char i=0;i<128;i++)
-//		UartSend(DxArray[i]);
-
-	ActLedPort&=~(1<<ActLedPin);
+	ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 	return 0;
 }
 
@@ -822,7 +830,10 @@ void HexSend(unsigned char HexChar)			//Function for transmitting debug data in 
 
 unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned char SecNum)
 {
-	ActLedPort|=(1<<ActLedPin);			//Switches on activity LED
+	if(DiskNum==0)
+		ActLedPort|=(1<<ActLed0Pin);			//Switches on activity LED
+	else
+		ActLedPort|=(1<<ActLed1Pin);
 
 	unsigned long int SecAddr=((TrkNum*26));	//Calculate start address of desired sector
 	SecAddr+=SecNum;
@@ -969,7 +980,7 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 	if(TempBlockNum==64)
 		TempBlockNum=0;
 
-	ActLedPort&=~(1<<ActLedPin);	//Turn off activity LED
+	ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));	//Turn off activity LED
 	return 0;
 }
 

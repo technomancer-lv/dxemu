@@ -10,13 +10,17 @@ BUILD_NUMBER_FILE=build_number.txt
 
 all:
 	clear
-	if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
-	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
-	date "+%d-%m-%Y %H:%M" > build_date.txt
+	@if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
+	@echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
+	@date "+%d-%m-%Y %H:%M" > build_date.txt
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
-	${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
-	${OBJCOPY} -j .text -j .data -O binary ${TARGET}.bin ${TARGET}.bin
-	ls -l ${TARGET}.bin
+	@${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
+	@${OBJCOPY} -j .text -j .data -O binary ${TARGET}.bin ${TARGET}.bin
+	@echo
+	@echo "Build number:  "$$(cat $(BUILD_NUMBER_FILE))
+	@echo "Bin file size: "$$(ls ${TARGET}.bin -l| awk '{print $$5}')
+	@echo
+	
 flash_isp:
 	avrdude -p ${MCU} -c atmelice_isp -U flash:w:${TARGET}.hex:i -F -P usb -B 2
 

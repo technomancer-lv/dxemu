@@ -20,6 +20,7 @@ void    CliRoutine(unsigned char CliData)
 		case 0x0D:
 		{
 			//If there's no command entered, nothing can be executed
+			//so it simply prints out prompt
 			if(CliBufferPointer==0)
 			{
 				UartSendString("\x0D\x0A");
@@ -52,9 +53,7 @@ void    CliRoutine(unsigned char CliData)
 							UartSendString(">");
 						}
 						else
-						{
 							UnknownCommand();
-						}
 						break;
 					}
 
@@ -79,6 +78,10 @@ void    CliRoutine(unsigned char CliData)
 									UartTxAddByte(CliBuffer[2]);
 									UartSendString(" image over Xmodem...");
 									unsigned char XDriveNumber=(CliBuffer[2]&1);
+									if(XDriveNumber==0)
+										ActLedPort|=(1<<ActLed0Pin);
+									else
+										ActLedPort|=(1<<ActLed1Pin);
 
 									while(1)
 									{
@@ -134,6 +137,7 @@ void    CliRoutine(unsigned char CliData)
 									}
 
 									UartTxAddByte(0x04);
+									ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 									_delay_ms(2000);
 									UartSendString("Done\x0D\x0A");
 									UartSendString("\x0D\x0A");
@@ -149,15 +153,14 @@ void    CliRoutine(unsigned char CliData)
 									UartTxAddByte(CliBuffer[2]);
 									UartSendString(" image over Xmodem...");
 									unsigned char XDriveNumber=(CliBuffer[2]&1);
-
+									if(XDriveNumber==0)
+										ActLedPort|=(1<<ActLed0Pin);
+									else
+										ActLedPort|=(1<<ActLed1Pin);
 
 									unsigned long int SectorAddr=0xC0000;
 
-									for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
-									{
-										RomEraseBlock(SectorAddr);
-										SectorAddr+=0x1000;
-									}
+									RomEraseImage(SectorAddr);
 
 									XmodemTimeout=0;
 									UartTxAddByte(0x15);
@@ -167,9 +170,7 @@ void    CliRoutine(unsigned char CliData)
 										unsigned char BuffTest=UartIsBufferEmpty();
 										_delay_ms(1);
 										if(BuffTest==0)
-										{
 											break;
-										}
 
 										if(XmodemTimeout>=30)
 										{
@@ -229,9 +230,7 @@ void    CliRoutine(unsigned char CliData)
 															case 0x04:
 															{
 																if(PreferredPacketNum<2002)
-																{
 																	XmodemTransferStatus=TransferTooShort;
-																}
 																else
 																	XmodemTransferStatus=TransferCompleted;
 																break;
@@ -244,26 +243,18 @@ void    CliRoutine(unsigned char CliData)
 													case 1:
 													{
 														if(XRecByte==(PreferredPacketNum&0xFF))
-														{
 															ReceivedBytes++;
-														}
 														else
-														{
 															XmodemTransferStatus=TransferOutOfSync;
-														}
 														break;
 													}
 
 													case 2:
 													{
 														if(XRecByte==(255-(PreferredPacketNum&0xFF)))
-														{
 															ReceivedBytes++;
-														}
 														else
-														{
 															XmodemTransferStatus=TransferOutOfSync;
-														}
 														break;
 													}
 
@@ -305,9 +296,7 @@ void    CliRoutine(unsigned char CliData)
 												}
 											}
 											if(XmodemTransferStatus>TransferSectorOk)
-											{
 												break;
-											}
 										}
 										switch(XmodemTransferStatus)
 										{
@@ -322,27 +311,76 @@ void    CliRoutine(unsigned char CliData)
 
 								unsigned long int SectorAddr=0;
 
-								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
-								{
-									RomEraseBlock(SectorAddr+RestoreOffset);
-									SectorAddr+=0x1000;
-								}
-
 								//Copy image, sector by sector
 								SectorAddr=0;
 
-								for(unsigned int BackupCopyLoop=0;BackupCopyLoop<2048;BackupCopyLoop++)
-								{
-									RomSectorRead(SectorAddr+0xC0000,0);
-									RomSectorWrite(SectorAddr+RestoreOffset,0);
-									SectorAddr+=0x80;
-								}
+								RomCopyImage(SectorAddr+0xC0000,SectorAddr+RestoreOffset);
 
+												//TO DO - output error messages
 												UartTxAddByte(0x06);
 												_delay_ms(1000);
 												UartSendString("Done\x0D\x0A");
 												break;
 											}
+
+											case TransferTimeout:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("ERROR - TIMEOUT\x0D\x0A");
+												break;
+											}
+
+											case TransferOutOfSync:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("ERROR - INCORRECT PACKET NUMBER\x0D\x0A");
+												break;
+											}
+
+											case TransferCrcFailed:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("ERROR - CRC ERROR\x0D\x0A");
+												break;
+											}
+
+											case TransferTooShort:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("ERROR - FILE TOO SHORT\x0D\x0A");
+												break;
+											}
+
+											case TransferNoSoh:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("ERROR - INCORRECT PACKET HEADER\x0D\x0A");
+												break;
+											}
+
+											case TransferTooLong:
+											{
+												UartTxAddByte(0x15);
+												_delay_ms(1000);
+												UartSendString("ERROR - FILE TOO LONG\x0D\x0A");
+												break;
+											}
+
+											case TransferCancelled:
+											{
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
+												UartSendString("TRANSFER CANCELLED BY USER\x0D\x0A");
+												break;
+											}
+
+											//TO DO - program crashes when file too long
+											//TO DO - exit transfer gracefully
 
 											default:
 											{
@@ -351,7 +389,7 @@ void    CliRoutine(unsigned char CliData)
 												UartTxAddByte(' ');
 												UartSendString("SOMETHING FUCKED UP\x0D\x0A");
 
-											break;
+												break;
 											}
 										}
 										if(XmodemTransferStatus>TransferSectorOk)
@@ -359,7 +397,7 @@ void    CliRoutine(unsigned char CliData)
 									}
 
 
-
+									ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 									UartSendString("\x0D\x0A");
 									UartSendString(">");
 									break;
@@ -391,32 +429,24 @@ void    CliRoutine(unsigned char CliData)
 								UartSendString(" image...\x0D\x0A");
 
 								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
+								if(BackupDriveNumber==0)
+									ActLedPort|=(1<<ActLed0Pin);
+								else
+									ActLedPort|=(1<<ActLed1Pin);
 
 								//Erase backup region
 								unsigned long int BackupAddr=BackupDriveNumber;
 								BackupAddr=BackupAddr*0x80000;
 								BackupAddr+=0x100000;
-								UartSendString("Erasing...\x0D\x0A");
-
-								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
-								{
-									RomEraseBlock(BackupAddr);
-									BackupAddr+=0x1000;
-								}
-								UartSendString("Previous backup erased\x0D\x0A");
 								UartSendString("Copying...\x0D\x0A");
 
 								//Copy image, sector by sector
 								BackupAddr=BackupDriveNumber;
 								BackupAddr=BackupAddr*0x80000;
 
-								for(unsigned int BackupCopyLoop=0;BackupCopyLoop<2048;BackupCopyLoop++)
-								{
-									RomSectorRead(BackupAddr,0);
-									RomSectorWrite(BackupAddr+0x100000,0);
-									BackupAddr+=0x80;
-								}
+								RomCopyImage(BackupAddr,BackupAddr+0x100000);
 
+								ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 								UartSendString("Done\x0D\x0A\x0D\x0A");
 								UartSendString(">");
 							}
@@ -442,32 +472,24 @@ void    CliRoutine(unsigned char CliData)
 								UartSendString(" image from backup...\x0D\x0A");
 
 								unsigned char BackupDriveNumber=(CliBuffer[1]&1);
+								if(BackupDriveNumber==0)
+									ActLedPort|=(1<<ActLed0Pin);
+								else
+									ActLedPort|=(1<<ActLed1Pin);
 
 								//Erase backup region
 
-								unsigned long int BackupAddr=BackupDriveNumber;
-								BackupAddr=BackupAddr*0x80000;
-								UartSendString("Erasing ...\x0D\x0A");
-
-								for(unsigned char EraseLoop=0;EraseLoop<64;EraseLoop++)
-								{
-									RomEraseBlock(BackupAddr);
-									BackupAddr+=0x1000;
-								}
-								UartSendString("Floppy image erased\x0D\x0A");
+								unsigned long int RestoreAddr=BackupDriveNumber;
+								RestoreAddr=RestoreAddr*0x80000;
 								UartSendString("Copying...\x0D\x0A");
 
 								//Copy image, sector by sector
-								BackupAddr=BackupDriveNumber;
-								BackupAddr=BackupAddr*0x80000;
+								RestoreAddr=BackupDriveNumber;
+								RestoreAddr=RestoreAddr*0x80000;
 
-								for(unsigned int BackupCopyLoop=0;BackupCopyLoop<2048;BackupCopyLoop++)
-								{
-									RomSectorRead(BackupAddr+0x100000,0);
-									RomSectorWrite(BackupAddr,0);
-									BackupAddr+=0x80;
-								}
+								RomCopyImage(RestoreAddr+0x100000,RestoreAddr);
 
+								ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 								UartSendString("Done\x0D\x0A\x0D\x0A");
 								UartSendString(">");
 							}
@@ -480,6 +502,9 @@ void    CliRoutine(unsigned char CliData)
 					}
 
 					//Debug
+					//These functions are used to watch commands and data
+					//that are exchanged between computer and emulator
+					//TO DO - implement debug data output in main.c
 					case 'd':
 					case 'D':
 					{
@@ -488,13 +513,15 @@ void    CliRoutine(unsigned char CliData)
 				       			UartSendString("\x0D\x0A");
 							switch(CliBuffer[1])
 							{
+								//No debug - no data output at data exchange
 								case '0':
 								{
 									SystemStatus&=~((1<<DebugOn)|(1<<DebugVerbose));
 									UartSendString("Debug off\x0D\x0A");
 									break;
 								}
-
+								//Simple debug - command, track and sector numbers are
+								//shown at data exchange
 								case '1':
 								{
 									SystemStatus&=~(1<<DebugVerbose);
@@ -502,7 +529,8 @@ void    CliRoutine(unsigned char CliData)
 									UartSendString("Debug on\x0D\x0A");
 									break;
 								}
-
+								//Verbose debug - command, parameters and data are
+								//shown at data exchange. This might slow things down.
 								case '2':
 								{
 									SystemStatus|=((1<<DebugOn)|(1<<DebugVerbose));
@@ -525,7 +553,7 @@ void    CliRoutine(unsigned char CliData)
 					}
 
 					//Tests
-					case 's':
+					/*case 's':
 					{
 						UartSendString("\x0D\x0A");
 						UartSendString("0x00000\x0D\x0A");
@@ -559,8 +587,9 @@ void    CliRoutine(unsigned char CliData)
 						}
 						UartSendString("\x0D\x0A>");
 						break;
-					}
+					}*/
 
+					//If command is not recognised, prints out this help message
 					default:
 					{
 		        			UartSendString("\x0D\x0A");
@@ -590,6 +619,7 @@ void    CliRoutine(unsigned char CliData)
 		//Ctrl-C
 		case 0x03:
 		{
+			CliBufferPointer=0;
 	        	UartSendString("^C\x0D\x0A");
 			UartSendString(">");
 			break;
@@ -598,23 +628,21 @@ void    CliRoutine(unsigned char CliData)
 		//Backspace
 		case 0x08:
 		{
-			if(CliBufferPointer>0)
+			if(CliBufferPointer>0)			//If anything has been written in console
 			{
-		        	UartSendString("\x1B[D\x1B[K");
+		        	UartSendString("\x1B[D\x1B[K");	//Moves cursor back one position and deletes all un right of cursor
 				CliBufferPointer--;
 			}
 			else
-				UartTxAddByte(0x07);
+				UartTxAddByte(0x07);		//If no - output bell simbol  TO DO - make this work
 			break;
 		}
-
-
 
 		default:
 		{
 			if(CliBufferPointer<(CliBufferMax))
 			{
-				if(CliData>=0x20)
+				if((CliData>=0x20)&(CliData<0x7F))	//Save and output only printable symbols
 				{
 					UartTxAddByte(CliData);
 					CliBuffer[CliBufferPointer]=CliData;
@@ -623,7 +651,7 @@ void    CliRoutine(unsigned char CliData)
 			}
 			else
 			{
-				UartTxAddByte(0x07);
+				UartTxAddByte(0x07);		//Output bell on unsupported unprintables
 			}
 		break;
 		}
