@@ -61,6 +61,19 @@ void    CliRoutine(unsigned char CliData)
 					case 'x':
 					case 'X':
 					{
+								unsigned char XmodemTransferStatus=0;
+								#define		TransferInProcess	0
+								#define		TransferSectorOk	1
+								#define		TransferCompleted	2
+								#define		TransferTimeout		3
+								#define		TransferOutOfSync	4
+								#define		TransferCrcFailed	5
+								#define		TransferNoSoh		6
+								#define		TransferTooLong		7
+								#define		TransferTooShort	8
+								#define		TransferExit		9
+								#define		TransferCancelled	10
+
 						//Tests if command length with parameters is correct
 						if(CliBufferPointer==3)
 						{
@@ -69,6 +82,7 @@ void    CliRoutine(unsigned char CliData)
 							//r - receives floppy image from computer
 							switch(CliBuffer[1])
 							{
+
 								//Sending
 								case 's':
 								case 'S':
@@ -85,6 +99,7 @@ void    CliRoutine(unsigned char CliData)
 
 									while(1)
 									{
+										//TO DO - add timeout
 										unsigned char BuffTest=UartIsBufferEmpty();
 										_delay_us(1);
 										if(BuffTest==0)
@@ -92,8 +107,16 @@ void    CliRoutine(unsigned char CliData)
 											unsigned char NakTest=UartRxGetByte();
 											if(NakTest==0x15)
 												break;
+											if(NakTest==0x03)
+											{
+												XmodemTransferStatus=TransferCancelled;
+												break;
+											}
 										}
 									}
+
+									if(XmodemTransferStatus>TransferInProcess)
+										break;
 
 									unsigned char PacketNumber=1;
 									unsigned char PacketCrc=0;
@@ -182,18 +205,6 @@ void    CliRoutine(unsigned char CliData)
 
 									unsigned int PreferredPacketNum=1;
 									SectorAddr=0xC0000;
-									unsigned char XmodemTransferStatus=0;
-									#define		TransferInProcess	0
-									#define		TransferSectorOk	1
-									#define		TransferCompleted	2
-									#define		TransferTimeout		3
-									#define		TransferOutOfSync	4
-									#define		TransferCrcFailed	5
-									#define		TransferNoSoh		6
-									#define		TransferTooLong		7
-									#define		TransferTooShort	8
-									#define		TransferExit		9
-									#define		TransferCancelled	10
 
 									while(1)
 									{
