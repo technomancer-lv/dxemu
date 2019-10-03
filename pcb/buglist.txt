@@ -1,2 +1,2 @@
-1. Two RefDes on PCB are swapped
-2. Pin 2 of JP5 should be connected to GND
+1. (fixed) Two RefDes on PCB are swapped
+2. (fixed) Pin 2 of JP5 should be connected to GND
