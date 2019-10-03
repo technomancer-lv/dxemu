@@ -571,24 +571,30 @@ void    CliRoutine(unsigned char CliData)
 
 					//Statistics - show simple data about read/write packets, errors, etc
 					case 's':
-					{
-						UartSendString("\x0D\x0A");
-						UartSendString("Session statistics:\x0D\x0A");
-						UartSendString("Uptime: ");
-						DecSend(SystemUptime);
-						UartSendString("s\x0D\x0A");
-						UartSendString("Sectors written  read\x0D\x0A");
-						UartSendString("DX0:      ");
-						DecSend(DxSectorsWritten[0]);
-						UartSendString(" ");
-						DecSend(DxSectorsRead[0]);
-						UartSendString("\x0D\x0A");
-						UartSendString("DX1:      ");
-						DecSend(DxSectorsWritten[1]);
-						UartSendString(" ");
-						DecSend(DxSectorsRead[1]);
-						UartSendString("\x0D\x0A");
-						UartSendString("\x0D\x0A>");
+					{ 
+						if(CliBufferPointer==1)
+						{
+							UartSendString("\x0D\x0A");
+							UartSendString("Session statistics:\x0D\x0A");
+							//TODO - divide time into hours, minutes and seconds
+							UartSendString("Uptime: ");
+							DecSend(SystemUptime);
+							UartSendString("s\x0D\x0A");
+							UartSendString("Sectors written  read\x0D\x0A");
+							UartSendString("DX0:      ");
+							DecSend(DxSectorsWritten[0]);
+							UartSendString(" ");
+							DecSend(DxSectorsRead[0]);
+							UartSendString("\x0D\x0A");
+							UartSendString("DX1:      ");
+							DecSend(DxSectorsWritten[1]);
+							UartSendString(" ");
+							DecSend(DxSectorsRead[1]);
+							UartSendString("\x0D\x0A");
+							UartSendString("\x0D\x0A>");
+						}
+						else
+							UnknownCommand();
 						break;
 						//TODO - add error statistics
 					}
