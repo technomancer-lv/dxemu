@@ -16,7 +16,7 @@
 *		Parity check (in progress)
 *		Function time-outs
 *		Divide code into separate files
-*		Statistics - command tyoe count, error count
+*		Statistics - command type count, error count
 *
 */
 
@@ -133,8 +133,8 @@
 #define	ActLedPort	PORTC
 #define	ActLedIn	PINC
 #define	ActLedDdr	DDRC
-#define	ActLed0Pin	3
-#define	ActLed1Pin	2
+#define	ActLed0Pin	2
+#define	ActLed1Pin	3
 
 //Memory regions
 #define	Dx0MemStart	0x000000
@@ -150,10 +150,9 @@
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 					//0 - DX0
 					//1 - DX1
-					//2 - DY0
-					//3 - DY1
 
-unsigned char CopyArray[128];
+unsigned char CopyArray[128];		//Tempraroy data buffer array, used for data transfer over Xmodem
+					//and data copying between data blocks
 
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
 unsigned char	DxArrayPointer=0;	//Pointer for saving and reading data from array
@@ -185,6 +184,11 @@ unsigned char	SystemStatus=0;
 unsigned char DxTimeout=0;
 unsigned int XmodemTimeout=0;
 
+unsigned int	DxSectorsWritten[2]={0,0};
+unsigned int	DxSectorsRead[2]={0,0};
+unsigned char	SystemUptimeDiv=0;
+unsigned int	SystemUptime=0;
+
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
 							//from the controller. 0xFF - parity error
@@ -197,7 +201,7 @@ unsigned char	SpiSend(unsigned char SpiData);
 /* Functions for write/read to/from flash memory
 *  TrkNum - track number  (0-77 for DX drive)
 *  SecNum - sector number (0-26 for DX drive)
-*  DiskNum - disk number  (0,1 - DX drives, 2,3 - DY drives if DY will be implemented)
+*  DiskNum - disk number  (0,1 - DX drives)
 */
 
 void		RomSetStatus(unsigned char RomStatus);
@@ -214,11 +218,11 @@ void		RomCopyImage(unsigned long int ImageSourceAddr,unsigned long int ImageDest
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		HexSend(unsigned char HexChar);
+void		DecSend(unsigned int DecData);
 
-unsigned char Xtransmit (unsigned char DriveNum);
+unsigned char	Xtransmit (unsigned char DriveNum);
 
 #include "cli_dxemu.h"
-
 
 // ProgramStart
 int main()
@@ -797,6 +801,7 @@ unsigned char 	RomRead(unsigned char DiskNum,unsigned char TrkNum,unsigned char 
 	RomSectorRead(SecAddr,1);
 
 	ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
+	DxSectorsRead[DiskNum]++;
 	return 0;
 }
 
@@ -814,6 +819,28 @@ void HexSend(unsigned char HexChar)			//Function for transmitting debug data in 
 		UartTxAddByte(HexTemp+55);
 	else
 		UartTxAddByte(HexTemp+0x30);
+}
+
+void	DecSend(unsigned int DecData)
+{
+	unsigned char DecLeadingZero=0;
+	unsigned int DecDivider=10000;
+	for(unsigned char DecLoop=0;DecLoop<4;DecLoop++)
+	{
+	unsigned char DecSendTemp=0;
+		while(DecData>=DecDivider)
+		{
+			DecSendTemp++;
+			DecData-=DecDivider;
+			DecLeadingZero=1;
+		}
+		DecDivider=(DecDivider/10);
+		if(DecLeadingZero>0)
+			UartTxAddByte(DecSendTemp+0x30);
+		else
+			UartTxAddByte(' ');
+	}
+	UartTxAddByte(DecData+0x30);
 }
 
 
@@ -980,6 +1007,8 @@ unsigned char 	RomWrite(unsigned char DiskNum, unsigned char TrkNum,unsigned cha
 	if(TempBlockNum==64)
 		TempBlockNum=0;
 
+	DxSectorsWritten[DiskNum]++;
+
 	ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));	//Turn off activity LED
 	return 0;
 }
@@ -993,35 +1022,16 @@ void	ExitState(void)			//Function for resetting DX interface to idle state
 	DxArrayPointer=0;
 }
 
-
-//======== XMODEM ========
-//Xmodem file transfer
-
-unsigned char Xtransmit (unsigned char DriveNum)
-{
-					//Calculate drive base address
-	unsigned long int ImageAddress=DriveNum;
-	ImageAddress*=0x80000;
-					//Send 2002 data packets.
-					//One disk contains 2002 setcors (77 tracks*26 sectors)
-					//One data packet is exactly one sector (128 bytes)
-	for (unsigned int XtLoop=0;XtLoop<2002;XtLoop++)
-	{
-		//Send data packet
-
-		//Wait for ACK
-
-	}
-
-	//Send EOT
-
-	return 0;
-}
-
 //Timer INT, executes 10x in one second
 ISR(TIMER1_COMPA_vect)
 {
 	DxTimeout++;
 	XmodemTimeout++;
+	SystemUptimeDiv++;
+	if(SystemUptimeDiv==10)
+	{
+		SystemUptimeDiv=0;
+		SystemUptime++;
+	}
 }
 

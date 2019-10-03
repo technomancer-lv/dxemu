@@ -43,8 +43,8 @@ void    CliRoutine(unsigned char CliData)
 					{
 						if(CliBufferPointer==1)
 						{
-							//TO DO - store bootloader and software version somewhere it can be read from here
-							//TO DO - automatically add build number, date and time
+							//TODO - store bootloader and software version somewhere it can be read from here
+							//TODO - automatically add build number, date and time
 				       			UartSendString("\x0D\x0A");
 							UartSendString("PCB v1.0\x0D\x0A");
 							UartSendString("BLD v0.1\x0D\x0A");
@@ -61,18 +61,18 @@ void    CliRoutine(unsigned char CliData)
 					case 'x':
 					case 'X':
 					{
-								unsigned char XmodemTransferStatus=0;
-								#define		TransferInProcess	0
-								#define		TransferSectorOk	1
-								#define		TransferCompleted	2
-								#define		TransferTimeout		3
-								#define		TransferOutOfSync	4
-								#define		TransferCrcFailed	5
-								#define		TransferNoSoh		6
-								#define		TransferTooLong		7
-								#define		TransferTooShort	8
-								#define		TransferExit		9
-								#define		TransferCancelled	10
+						unsigned char XmodemTransferStatus=0;
+						#define		TransferInProcess	0
+						#define		TransferSectorOk	1
+						#define		TransferCompleted	2
+						#define		TransferTimeout		3
+						#define		TransferOutOfSync	4
+						#define		TransferCrcFailed	5
+						#define		TransferNoSoh		6
+						#define		TransferTooLong		7
+						#define		TransferTooShort	8
+						#define		TransferExit		9
+						#define		TransferCancelled	10
 
 						//Tests if command length with parameters is correct
 						if(CliBufferPointer==3)
@@ -91,15 +91,20 @@ void    CliRoutine(unsigned char CliData)
 									UartSendString("Sending RX");
 									UartTxAddByte(CliBuffer[2]);
 									UartSendString(" image over Xmodem...");
+									//Drive number - 3. character of the command.
+									//Use only LSB, so there's only two possible drive numbers
+									//TODO - test if 0 or 1, else fail
 									unsigned char XDriveNumber=(CliBuffer[2]&1);
 									if(XDriveNumber==0)
 										ActLedPort|=(1<<ActLed0Pin);
 									else
 										ActLedPort|=(1<<ActLed1Pin);
 
+									//Waiting for initial NAK byte from receiver
+									//TODO - include this in send loop?
 									while(1)
 									{
-										//TO DO - add timeout
+										//TODO - add timeout
 										unsigned char BuffTest=UartIsBufferEmpty();
 										_delay_us(1);
 										if(BuffTest==0)
@@ -153,7 +158,7 @@ void    CliRoutine(unsigned char CliData)
 											}
 										}
 
-									//TO DO - make ASCII control code include?
+									//TODO - make ASCII control code include?
 
 										SectorAddr+=0x80;
 										PacketNumber++;
@@ -168,6 +173,7 @@ void    CliRoutine(unsigned char CliData)
 									break;
 								}
 
+								//Image receive over Xmodem
 								case 'r':
 								case 'R':
 								{
@@ -215,7 +221,7 @@ void    CliRoutine(unsigned char CliData)
 										{
 											unsigned char BuffTest=UartIsBufferEmpty();
 											_delay_us(1);
-											//TO DO - get rid of these useless delays
+											//TODO - get rid of these useless delays
 											if(BuffTest==0)
 											{
 												unsigned char XRecByte=UartRxGetByte();
@@ -313,8 +319,8 @@ void    CliRoutine(unsigned char CliData)
 										{
 											case TransferCompleted:
 											{
-												//TO DO - clear up this messed up region
-												//TO DO - make image copy function
+												//TODO - clear up this messed up region
+												//TODO - make image copy function
 								//Erase backup region
 
 								unsigned long int RestoreOffset=XDriveNumber;
@@ -327,7 +333,7 @@ void    CliRoutine(unsigned char CliData)
 
 								RomCopyImage(SectorAddr+0xC0000,SectorAddr+RestoreOffset);
 
-												//TO DO - output error messages
+												//TODO - output error messages
 												UartTxAddByte(0x06);
 												_delay_ms(1000);
 												UartSendString("Done\x0D\x0A");
@@ -390,8 +396,8 @@ void    CliRoutine(unsigned char CliData)
 												break;
 											}
 
-											//TO DO - program crashes when file too long
-											//TO DO - exit transfer gracefully
+											//TODO - program crashes when file too long
+											//TODO - exit transfer gracefully
 
 											default:
 											{
@@ -515,7 +521,7 @@ void    CliRoutine(unsigned char CliData)
 					//Debug
 					//These functions are used to watch commands and data
 					//that are exchanged between computer and emulator
-					//TO DO - implement debug data output in main.c
+					//TODO - implement debug data output in main.c
 					case 'd':
 					case 'D':
 					{
@@ -563,42 +569,29 @@ void    CliRoutine(unsigned char CliData)
 						break;
 					}
 
-					//Tests
-					/*case 's':
+					//Statistics - show simple data about read/write packets, errors, etc
+					case 's':
 					{
 						UartSendString("\x0D\x0A");
-						UartSendString("0x00000\x0D\x0A");
-						RomSectorRead(0x000000,0);
-						for (unsigned int testvar=0;testvar<128;testvar++)
-						{
-							HexSend(CopyArray[testvar]);
-							UartTxAddByte(' ');
-							if((testvar&7)==7)
-								UartSendString("\x0D\x0A");
-						}
+						UartSendString("Session statistics:\x0D\x0A");
+						UartSendString("Uptime: ");
+						DecSend(SystemUptime);
+						UartSendString("s\x0D\x0A");
+						UartSendString("Sectors written  read\x0D\x0A");
+						UartSendString("DX0:      ");
+						DecSend(DxSectorsWritten[0]);
+						UartSendString(" ");
+						DecSend(DxSectorsRead[0]);
 						UartSendString("\x0D\x0A");
-						UartSendString("0x80000\x0D\x0A");
-						RomSectorRead(0x080000,0);
-						for (unsigned int testvar=0;testvar<128;testvar++)
-						{
-							HexSend(CopyArray[testvar]);
-							UartTxAddByte(' ');
-							if((testvar&7)==7)
-								UartSendString("\x0D\x0A");
-						}
+						UartSendString("DX1:      ");
+						DecSend(DxSectorsWritten[1]);
+						UartSendString(" ");
+						DecSend(DxSectorsRead[1]);
 						UartSendString("\x0D\x0A");
-						UartSendString("0xC0000\x0D\x0A");
-						RomSectorRead(0x0C0000,0);
-						for (unsigned int testvar=0;testvar<128;testvar++)
-						{
-							HexSend(CopyArray[testvar]);
-							UartTxAddByte(' ');
-							if((testvar&7)==7)
-								UartSendString("\x0D\x0A");
-						}
 						UartSendString("\x0D\x0A>");
 						break;
-					}*/
+						//TODO - add error statistics
+					}
 
 					//If command is not recognised, prints out this help message
 					default:
@@ -617,7 +610,8 @@ void    CliRoutine(unsigned char CliData)
 		        			UartSendString("d0 - disable debug\x0D\x0A");
 		        			UartSendString("d1 - enable debug\x0D\x0A");
 		        			UartSendString("d2 - enable verbose debug\x0D\x0A");
-		        			UartSendString("v - show version\x0D\x0A\x0D\x0A");
+		        			UartSendString("v - show version\x0D\x0A");
+		        			UartSendString("s - statistics\x0D\x0A\x0D\x0A");
 						UartSendString(">");
 						break;
 					}
@@ -630,8 +624,8 @@ void    CliRoutine(unsigned char CliData)
 		//Ctrl-C
 		case 0x03:
 		{
-			CliBufferPointer=0;
-	        	UartSendString("^C\x0D\x0A");
+			CliBufferPointer=0;		//Drops entered command
+	        	UartSendString("^C\x0D\x0A");	//Outputs prompt
 			UartSendString(">");
 			break;
 		}
@@ -645,7 +639,7 @@ void    CliRoutine(unsigned char CliData)
 				CliBufferPointer--;
 			}
 			else
-				UartTxAddByte(0x07);		//If no - output bell simbol  TO DO - make this work
+				UartTxAddByte(0x07);		//If no - output bell simbol  TODO - make this work or test on direct connection to workstation
 			break;
 		}
 
@@ -654,8 +648,10 @@ void    CliRoutine(unsigned char CliData)
 			if(CliBufferPointer<(CliBufferMax))
 			{
 				if((CliData>=0x20)&(CliData<0x7F))	//Save and output only printable symbols
+									//Escape sequences are not filtered out, so
+									//pressing arrows generates symbols
 				{
-					UartTxAddByte(CliData);
+					UartTxAddByte(CliData);		//Echoes received symbol
 					CliBuffer[CliBufferPointer]=CliData;
 					CliBufferPointer++;
 				}
@@ -669,6 +665,7 @@ void    CliRoutine(unsigned char CliData)
 	}
 }
 
+//Function that prints message on unsupported commands
 void	UnknownCommand(void)
 {
 	UartSendString("\x0D\x0A");
@@ -676,6 +673,7 @@ void	UnknownCommand(void)
 	UartSendString(">");
 }
 
+//Function that prints out message on drive number >1
 void	IncorrectDrive(void)
 {
 	UartSendString("\x0D\x0A");
