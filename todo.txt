@@ -3,15 +3,18 @@ Prog:
   Smaller todo steps are marked in the beginning and all over program source
   Test why bootloader is not verifying correctly (but works)
   Maybe firmware update over Xmodem? Flash capacity allows this
-  Simple statistics - sectors wrote, sectors read, system uptime
-  Make automated test script for testing backup, restore and file transfer functions
+  _Simple statistics - sectors wrote, sectors read, system uptime, errors
+  _Make automated test script for testing backup, restore and file transfer functions
   
 Mechanical:
-  Fix plastics part issue (non critical)
+  Fix plastics part offset issue (non critical)
+  Make assembly drawing
+  Assign part numbers to plastic parts
   
 Electrical:
   Make it work with I4 board and test with MC again
   Test with MC1201.01
+  Test with real PDP-11 RX01 controller
   
 Documentation:
   Add datasheets of all key components to folder "pdf"
