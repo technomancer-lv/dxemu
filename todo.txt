@@ -18,5 +18,3 @@ Documentation:
   Add datasheets of all key components to folder "pdf"
   Add used original PDP-11 documentation to folder "pdf"
   Add 1801VP1-033 pdf to folder "pdf"
-  Make schematics pdf file when finished
-  Drive activity LEDs are not marked correctly on board. Change sch according to that.
