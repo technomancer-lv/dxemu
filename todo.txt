@@ -7,12 +7,10 @@ Prog:
   _Make automated test script for testing backup, restore and file transfer functions
   
 Mechanical:
-  Fix plastics part offset issue (non critical)
-  Make assembly drawing
+  Fix plastics part width issue
   Assign part numbers to plastic parts
   
 Electrical:
-  Make it work with I4 board and test with MC again
   Test with MC1201.01
   Test with real PDP-11 RX01 controller
   
@@ -20,5 +18,3 @@ Documentation:
   Add datasheets of all key components to folder "pdf"
   Add used original PDP-11 documentation to folder "pdf"
   Add 1801VP1-033 pdf to folder "pdf"
-  Make schematics pdf file when finished
-  Drive activity LEDs are not marked correctly on board. Change sch according to that.
