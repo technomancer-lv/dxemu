@@ -73,6 +73,7 @@ void    CliRoutine(unsigned char CliData)
 						#define		TransferTooShort	8
 						#define		TransferExit		9
 						#define		TransferCancelled	10
+						#define		TransferTooManyRetries	11
 
 						//Tests if command length with parameters is correct
 						if(CliBufferPointer==3)
@@ -129,7 +130,10 @@ void    CliRoutine(unsigned char CliData)
 												if(NakTest==0x15)
 												{
 													XErrorCount++;
-													//TODO - check error count, interrupt ef needed
+													if(XErrorCount>=XErrorMax)
+													{
+														XmodemTransferStatus=TransferTooManyRetries;
+													}
 													break;
 												}
 												if(NakTest==0x03)
