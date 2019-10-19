@@ -27,16 +27,18 @@ OBJDUMP        = avr-objdump
 
 all:	TARGET = atmega328
 all:	MCU_TARGET = atmega328p
-all:	CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1' -DBAUD_RATE=57600
+all:	CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1' -DBAUD_RATE=115200
 all:	AVR_FREQ = 14745600L
 all:	LDSECTION  = --section-start=.text=0x7800
 all:	$(PROGRAM).hex
 
 flash:	TARGET = atmega328
-flash:	MCU_TARGET = atmega328p
+flash:	MCU_TARGET = atmega328pb
 flash:	HFUSE = DA
 flash:	LFUSE = FF
-flash:	EFUSE = FD
+
+#flash:	EFUSE = FD
+flash:	EFUSE = F5
 flash:	isp
 
 isp: $(TARGET)
