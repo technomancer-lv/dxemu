@@ -10,9 +10,8 @@
 *	Data is shifted MSB first
 *	Command and both addresses are 9-bit long with parity bit as LSB
 *
-*	TO DO:	Init all inputs also
-*		Write marked sectors
-*		Add 12bit compatibility at least in hardware
+*	TODO:	Write marked sectors
+*		Add 12bit compatibility?
 *		Parity check (in progress)
 *		Function time-outs
 *		Divide code into separate files
@@ -81,15 +80,14 @@
 #define	DxShftDdr	DDRD
 #define	DxShftPin	4
 
-//TO DO - add 12bit input pin and functionality
+//TODO - add 12bit input pin and functionality
 //so this would be compatible with ... what?
 //12bit (IN)
-/*
-#define	Dx12bitPort
-#define	Dx12bitIn
-#define	Dx12bitDdr
-#define	Dx12bitPin
-*/
+
+#define	Dx12bitPort	PORTC
+#define	Dx12bitIn	PINC
+#define	Dx12bitDdr	DDRC
+#define	Dx12bitPin	5
 
 //UART
 //Tx
@@ -144,7 +142,7 @@
 #define	Dx0BackupStart	0x100000
 #define	Dx1BackupStart	0x180000
 
-//TO DO - change all mem offsets with these defines
+//TODO - change all mem offsets with these defines
 
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
@@ -241,6 +239,10 @@ int main()
 	DxDiPort|=(1<<DxDiPin);
 	DxDiDdr&=~(1<<DxDiPin);
 
+	//DX 12bit - input, pulled high
+	Dx12bitPort|=(1<<Dx12bitPin);
+	Dx12bitDdr&=~(1<<Dx12bitPin);
+
 	//DX data out pin - output, high (pulled high on bidir line in computer)
 	DxDoPort|=(1<<DxDoPin);
 	DxDoDdr|=(1<<DxDoPin);
@@ -264,6 +266,7 @@ int main()
 	//DX SHIFT (SDVIG)  - output, high
 	DxShftPort|=(1<<DxShftPin);
 	DxShftDdr|=(1<<DxShftPin);
+
 
 	//UART init
 	UartTxDdr|=(1<<UartTxPin);	//UART Tx - OUT
@@ -331,9 +334,6 @@ int main()
 		{
 			if(DxCommand==NoCommand)
 			{
-				//if(SystemStatus&(1<<DebugOn))
-				//	UartSendString("\x0D\x0AC ");
-				//	UartSendString("C");
 
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
@@ -341,15 +341,16 @@ int main()
 
 				//Read command - shift in from controller
 				unsigned char CommandTemp=ShiftInP();
-				//TO DO - parity test goes here
-
-//				UartSend(' ');
-//				HexSend(CommandTemp);
-//				UartSend(' ');
-
+				//TODO - parity test goes here
 				DxDriveSelected=((CommandTemp>>4)&0x01);	//Saves selected drive
 				DxCommand=((CommandTemp>>1)&7);			//Saves command
-			//	UartSend(DxCommand+0x30);			//Debug
+				if(SystemStatus&(1<<DebugOn))
+				{
+					UartTxAddByte('C');
+					UartTxAddByte(' ');
+					UartTxAddByte(DxCommand+0x30);
+					UartTxAddByte(' ');
+				}
 			}
 
 			switch (DxCommand)
@@ -365,6 +366,12 @@ int main()
 					else				//Receive 128 bytes from controller
 					{
 						DxArray[DxArrayPointer]=ShiftIn();
+						if(SystemStatus&(1<<DebugVerbose))
+						{
+							HexSend(DxArray[DxArrayPointer]);
+							UartTxAddByte(' ');
+						}
+
 						DxArrayPointer++;
 
 						if(DxArrayPointer==128)
@@ -381,7 +388,7 @@ int main()
 					{
 						if(DxState==IdleState)
 						{
-						//TO DO - merge with else
+						//TODO - merge with else
 							DxState=ReadBufferState;
 							DxOutPort&=~(1<<DxOutPin);
 							_delay_us(10);
@@ -394,10 +401,7 @@ int main()
 							DxIrPort|=(1<<DxIrPin);
 							ShiftOut(DxArray[DxArrayPointer]);
 							DxArrayPointer++;
-						//	if(DxArrayPointer==128)
-						//		ExitState();
-						//	else
-								DxIrPort&=~(1<<DxIrPin);
+							DxIrPort&=~(1<<DxIrPin);
 						}
 					}
 					else
@@ -421,32 +425,43 @@ int main()
 					if(DxState==SecAddrWaitState)
 					{
 						unsigned int	SectorTemp=ShiftInP();
-						//TO DO - parity test
+						//TODO - parity test
 						SecAddr=(SectorTemp-1);
 						if (SecAddr>26)
 						{
 							DxErrPort&=~(1<<DxErrPin);
 							ExitState();
 							break;
-							//TO DO - add error variable
+							//TODO - add error variable
 						}
 						DxState=TrackAddrWaitState;
 						DxIrPort&=~(1<<DxIrPin);
 						break;
-						//TO DO - error if parity error
+						//TODO - error if parity error
 
 					}
 					if(DxState==TrackAddrWaitState)
 					{
 						unsigned int	TrackTemp=ShiftInP();
-						//TO DO - parity test and exit
+						//TODO - parity test and exit
 						TrackAddr=TrackTemp;
 						if (TrackAddr>76)
 						{
 							DxErrPort&=~(1<<DxErrPin);
 							ExitState();
 							break;
-							//TO DO - add error variable
+							//TODO - add error variable
+						}
+
+						if(SystemStatus&(1<<DebugOn))
+						{
+							UartTxAddByte('T');
+							UartTxAddByte(' ');
+							DecSend(TrackAddr);
+							UartTxAddByte(' ');
+							UartTxAddByte('S');
+							UartTxAddByte(' ');
+							DecSend(SecAddr);
 						}
 
 						switch (DxCommand)
@@ -502,21 +517,21 @@ int main()
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
 			//Fill buffer with drive 0 track 1 sector 0
-			//TO DO: make reset edge sensitive
+			//TODO: make reset edge sensitive
 			RomRead(0,1,0);
 			DxDonePort|=(1<<DxDonePin);
 			_delay_ms(100);
 			DxOutPort&=~(1<<DxOutPin);
 			_delay_us(10);
 			ShiftOut(0b10000100);
+			if(SystemStatus&(1<<DebugOn))
+			{
+				UartSendString("RST");
+			}
 			ExitState();
-		//	UartSend(0x0A);
-		//	UartSend(0x0D);
-		//	UartSend('R');
-		//	UartSend('S');
-		//	UartSend('T');
 		}
 
+		//CLI process call
 		if((UartFlags&(1<<UartRxFifoEmpty))==0)
 		{
 		unsigned char RxTempLoop=UartRxGetByte();
@@ -821,6 +836,7 @@ void HexSend(unsigned char HexChar)			//Function for transmitting debug data in 
 		UartTxAddByte(HexTemp+0x30);
 }
 
+//TODO - add variable digit length as second variable
 void	DecSend(unsigned int DecData)
 {
 	unsigned char DecLeadingZero=0;
@@ -1020,6 +1036,11 @@ void	ExitState(void)			//Function for resetting DX interface to idle state
 	DxCommand=NoCommand;		//Reset state machine
 	DxState=IdleState;
 	DxArrayPointer=0;
+	if(SystemStatus&(1<<DebugOn))
+	{
+		UartTxAddByte(0x0D);
+		UartTxAddByte(0x0A);
+	}
 }
 
 //Timer INT, executes 10x in one second

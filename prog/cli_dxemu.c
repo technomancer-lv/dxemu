@@ -99,7 +99,6 @@ void    CliRoutine(unsigned char CliData)
 									UartSendString(" image over Xmodem...");
 									//Drive number - 3. character of the command.
 									//Use only LSB, so there's only two possible drive numbers
-									//TODO - test if 0 or 1, else fail
 									unsigned char	XDriveNumber=(CliBuffer[2]&1);
 									unsigned char	XErrorCount=0;
 									#define		XErrorMax	10
@@ -117,7 +116,6 @@ void    CliRoutine(unsigned char CliData)
 									XmodemTransferStatus=TransferInProcess;
 									XmodemTimeout=0;
 									//Waiting for initial NAK byte from receiver
-									//TODO - include this in send loop?
 									while(1)
 									{
 										while(1)
@@ -645,6 +643,7 @@ void    CliRoutine(unsigned char CliData)
 								}
 
 							}
+							//UartSendString("DEBUG IS NOT YET IMPLEMENTED\x0D\x0A");
 							UartSendString("\x0D\x0A>");
 						}
 						else
@@ -661,7 +660,17 @@ void    CliRoutine(unsigned char CliData)
 							UartSendString("Session statistics:\x0D\x0A");
 							//TODO - divide time into hours, minutes and seconds
 							UartSendString("Uptime: ");
-							DecSend(SystemUptime);
+							unsigned int UptimeTemp=SystemUptime;
+							unsigned int UptimeDigit=UptimeTemp/3600;
+							DecSend(UptimeDigit);
+							UartSendString("h ");
+							UptimeTemp=UptimeTemp-(UptimeDigit*3600);
+							UptimeDigit=UptimeTemp/60;
+							DecSend(UptimeDigit);
+							UartSendString("m ");
+							UptimeTemp=UptimeTemp-(UptimeDigit*60);
+							DecSend(UptimeTemp);
+							UartSendString("s ");
 							UartSendString("s\x0D\x0A");
 							UartSendString("Sectors written  read\x0D\x0A");
 							UartSendString("DX0:      ");
