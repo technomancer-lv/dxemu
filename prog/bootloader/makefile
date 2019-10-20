@@ -4,7 +4,7 @@ ISPTOOL	   = atmelice_isp
 #LDSECTION  = --section-start=.text=0x3800
 
 ISPFUSES    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -e -u -U lock:w:0xff:m -U efuse:w:0x$(EFUSE):m -U hfuse:w:0x$(HFUSE):m -U lfuse:w:0x$(LFUSE):m
-ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM).hex -U lock:w:0x0f:m
+ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM).hex -U lock:w:0xcf:m
 
 OBJ        = $(PROGRAM).o
 OPTIMIZE   = -Os
@@ -25,7 +25,7 @@ override LDFLAGS       = -Wl,$(LDSECTION)
 OBJCOPY        = avr-objcopy
 OBJDUMP        = avr-objdump
 
-all:	TARGET = atmega328
+all:	TARGET = atmega328p
 all:	MCU_TARGET = atmega328p
 all:	CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1' -DBAUD_RATE=115200
 all:	AVR_FREQ = 14745600L

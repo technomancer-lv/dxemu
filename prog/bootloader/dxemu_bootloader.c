@@ -128,10 +128,10 @@
 /* if monitor functions are included, LED goes on after monitor was entered */
 /* Onboard LED is connected to pin PB5 in Arduino NG, Diecimila, and Duomilanuove */ 
 /* other boards like e.g. Crumb8, Crumb168 are using PB2 */
-#define LED_DDR  DDRB
-#define LED_PORT PORTB
-#define LED_PIN  PINB
-#define LED      PINB1
+#define LED_DDR  DDRC
+#define LED_PORT PORTC
+#define LED_PIN  PINC
+#define LED      PINC3
 
 /* define various device id's */
 /* manufacturer byte is always the same */

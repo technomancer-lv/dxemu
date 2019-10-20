@@ -115,7 +115,7 @@ void    CliRoutine(unsigned char CliData)
 									SectorAddr=(SectorAddr*0x80000);
 									XmodemTransferStatus=TransferInProcess;
 									XmodemTimeout=0;
-									//Waiting for initial NAK byte from receiver
+									//Xmodem send loop
 									while(1)
 									{
 										while(1)
@@ -195,6 +195,7 @@ void    CliRoutine(unsigned char CliData)
 								case 'r':
 								case 'R':
 								{
+									//TODO - check if 0 or 1 else fail
 									UartSendString("\x0D\x0A");
 									UartSendString("Receiving RX");
 									UartTxAddByte(CliBuffer[2]);
@@ -658,30 +659,28 @@ void    CliRoutine(unsigned char CliData)
 						{
 							UartSendString("\x0D\x0A");
 							UartSendString("Session statistics:\x0D\x0A");
-							//TODO - divide time into hours, minutes and seconds
 							UartSendString("Uptime: ");
 							unsigned int UptimeTemp=SystemUptime;
 							unsigned int UptimeDigit=UptimeTemp/3600;
-							DecSend(UptimeDigit);
+							DecSend(UptimeDigit,0);
 							UartSendString("h ");
 							UptimeTemp=UptimeTemp-(UptimeDigit*3600);
 							UptimeDigit=UptimeTemp/60;
-							DecSend(UptimeDigit);
+							DecSend(UptimeDigit,0);
 							UartSendString("m ");
 							UptimeTemp=UptimeTemp-(UptimeDigit*60);
-							DecSend(UptimeTemp);
-							UartSendString("s ");
+							DecSend(UptimeTemp,0);
 							UartSendString("s\x0D\x0A");
 							UartSendString("Sectors written  read\x0D\x0A");
 							UartSendString("DX0:      ");
-							DecSend(DxSectorsWritten[0]);
+							DecSend(DxSectorsWritten[0],1);
 							UartSendString(" ");
-							DecSend(DxSectorsRead[0]);
+							DecSend(DxSectorsRead[0],1);
 							UartSendString("\x0D\x0A");
 							UartSendString("DX1:      ");
-							DecSend(DxSectorsWritten[1]);
+							DecSend(DxSectorsWritten[1],1);
 							UartSendString(" ");
-							DecSend(DxSectorsRead[1]);
+							DecSend(DxSectorsRead[1],1);
 							UartSendString("\x0D\x0A");
 							UartSendString("\x0D\x0A>");
 						}
@@ -737,7 +736,7 @@ void    CliRoutine(unsigned char CliData)
 				CliBufferPointer--;
 			}
 			else
-				UartTxAddByte(0x07);		//If no - output bell simbol  TODO - make this work or test on direct connection to workstation
+				UartTxAddByte(0x07);		//If no - output bell simbol
 			break;
 		}
 

@@ -149,7 +149,7 @@ unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 					//0 - DX0
 					//1 - DX1
 
-unsigned char CopyArray[128];		//Tempraroy data buffer array, used for data transfer over Xmodem
+unsigned char	CopyArray[128];		//Tempraroy data buffer array, used for data transfer over Xmodem
 					//and data copying between data blocks
 
 unsigned char 	DxArray[128];		//DX data buffer array, 128 bytes
@@ -179,14 +179,15 @@ unsigned char	SystemStatus=0;
 #define	DebugOn		0
 #define	DebugVerbose	1
 
-unsigned char DxTimeout=0;
-unsigned int XmodemTimeout=0;
+unsigned char 	DxTimeout=0;
+unsigned int 	XmodemTimeout=0;
 
 unsigned int	DxSectorsWritten[2]={0,0};
 unsigned int	DxSectorsRead[2]={0,0};
 unsigned char	SystemUptimeDiv=0;
 unsigned int	SystemUptime=0;
 
+unsigned 	DebugDiv=0;
 //Functions
 unsigned char	ShiftInP(void);				//Function for shifting in command and address with parity bit
 							//from the controller. 0xFF - parity error
@@ -216,7 +217,7 @@ void		RomCopyImage(unsigned long int ImageSourceAddr,unsigned long int ImageDest
 void		ExitState(void);			//Function that exits current state because of reset signal or error
 
 void		HexSend(unsigned char HexChar);
-void		DecSend(unsigned int DecData);
+void		DecSend(unsigned int DecData,unsigned char DecPadding);
 
 unsigned char	Xtransmit (unsigned char DriveNum);
 
@@ -346,6 +347,7 @@ int main()
 				DxCommand=((CommandTemp>>1)&7);			//Saves command
 				if(SystemStatus&(1<<DebugOn))
 				{
+					DebugDiv=0;
 					UartTxAddByte('C');
 					UartTxAddByte(' ');
 					UartTxAddByte(DxCommand+0x30);
@@ -362,6 +364,11 @@ int main()
 						DxState=FillBufferState;
 						DxIrPort&=~(1<<DxIrPin);
 						DxArrayPointer=0;
+						if(SystemStatus&(1<<DebugVerbose))
+						{
+							UartSendString("\x0D\x0A");
+							DebugDiv=0;
+						}
 					}
 					else				//Receive 128 bytes from controller
 					{
@@ -370,6 +377,12 @@ int main()
 						{
 							HexSend(DxArray[DxArrayPointer]);
 							UartTxAddByte(' ');
+							DebugDiv++;
+							if(DebugDiv>=8)
+							{
+								DebugDiv=0;
+								UartSendString("\x0D\x0A");
+							}
 						}
 
 						DxArrayPointer++;
@@ -384,8 +397,32 @@ int main()
 
 				case 1:	//Read buffer command
 				{
+					if(SystemStatus&(1<<DebugVerbose))
+					{
+						if(DebugDiv==0)
+						{
+							UartSendString("\x0D\x0A");
+						}
+						DebugDiv++;
+						if(DebugDiv>=8)
+							DebugDiv=0;
+					}
+
 					if(DxArrayPointer<128)
 					{
+					/*	if(SystemStatus&(1<<DebugVerbose))
+						{
+							HexSend(DxArray[DxArrayPointer]);
+							UartTxAddByte(' ');
+							DebugDiv++;
+							if(DebugDiv>=8)
+							{
+								DebugDiv=0;
+								UartSendString("\x0D\x0A");
+							}
+						}*/
+
+
 						if(DxState==IdleState)
 						{
 						//TODO - merge with else
@@ -457,11 +494,11 @@ int main()
 						{
 							UartTxAddByte('T');
 							UartTxAddByte(' ');
-							DecSend(TrackAddr);
+							DecSend(TrackAddr,0);
 							UartTxAddByte(' ');
 							UartTxAddByte('S');
 							UartTxAddByte(' ');
-							DecSend(SecAddr);
+							DecSend(SecAddr,0);
 						}
 
 						switch (DxCommand)
@@ -837,7 +874,7 @@ void HexSend(unsigned char HexChar)			//Function for transmitting debug data in 
 }
 
 //TODO - add variable digit length as second variable
-void	DecSend(unsigned int DecData)
+void	DecSend(unsigned int DecData,unsigned char DecPadding)
 {
 	unsigned char DecLeadingZero=0;
 	unsigned int DecDivider=10000;
@@ -854,7 +891,8 @@ void	DecSend(unsigned int DecData)
 		if(DecLeadingZero>0)
 			UartTxAddByte(DecSendTemp+0x30);
 		else
-			UartTxAddByte(' ');
+			if(DecPadding>0)
+				UartTxAddByte(' ');
 	}
 	UartTxAddByte(DecData+0x30);
 }
