@@ -41,15 +41,18 @@ void    CliRoutine(unsigned char CliData)
 					case 'v':
 					case 'V':
 					{
+						//TODO - fix 0x0D 0x0A problem in makefile
 						if(CliBufferPointer==1)
 						{
-							//TODO - store bootloader and software version somewhere it can be read from here
-							//TODO - automatically add build number, date and time
-				       			UartSendString("\x0D\x0A");
-							UartSendString("PCB v1.0\x0D\x0A");
-							UartSendString("BLD v0.1\x0D\x0A");
-							UartSendString("SW  v0.1\x0D\x0A");
-							UartSendString("SN  301\x0D\x0A");
+							UartSendString("\x0D\x0A");
+							for(unsigned char EeLoop=0;EeLoop<64;EeLoop++)
+							{
+								EEAR=EeLoop;
+								EECR|=(1<<EERE);
+								if(EEDR<0x7F)
+									UartTxAddByte(EEDR);
+							}
+							UartSendString("\x0D\x0A");
 							UartSendString(">");
 						}
 						else
