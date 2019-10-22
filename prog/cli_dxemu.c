@@ -41,18 +41,19 @@ void    CliRoutine(unsigned char CliData)
 					case 'v':
 					case 'V':
 					{
-						//TODO - fix 0x0D 0x0A problem in makefile
+						//Reads first 128 characters from EEPROM and prints all that is printable
+						//EEPROM contents are generated upon programming
 						if(CliBufferPointer==1)
 						{
 							UartSendString("\x0D\x0A");
-							for(unsigned char EeLoop=0;EeLoop<64;EeLoop++)
+							for(unsigned char EeLoop=0;EeLoop<128;EeLoop++)
 							{
 								EEAR=EeLoop;
 								EECR|=(1<<EERE);
 								if(EEDR<0x7F)
 									UartTxAddByte(EEDR);
 							}
-							UartSendString("\x0D\x0A");
+							UartSendString("\x0D\x0A\x0D\x0A");
 							UartSendString(">");
 						}
 						else

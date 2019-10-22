@@ -17,15 +17,14 @@ all:
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
 	@${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
 	@${OBJCOPY} -j .text -j .data -O binary ${TARGET}.bin ${TARGET}.bin
-	
-	#Generating EEPROM contents
-	printf "SW " > eeprom.bin;cat version_number.txt | tr '\n' ' ' >> eeprom.bin;printf "build " >> eeprom.bin;cat build_number.txt  | tr '\n' ' '>> eeprom.bin;cat build_date.txt | tr '\n' ' '>> eeprom.bin;printf '\x0D\x0A' >> eeprom.bin ;printf 'BLD ' >> eeprom.bin ;cat bootloader/build_number.txt  | tr '\n' ' '>> eeprom.bin;cat bootloader/build_date.txt | tr '\n' ' '>> eeprom.bin
 	@echo
 	@echo "Build number:  "$$(cat $(BUILD_NUMBER_FILE))
 	@echo "Bin file size: "$$(ls ${TARGET}.bin -l| awk '{print $$5}')
 	@echo
 	
 flash_isp:
+	#Generating EEPROM contents
+	@printf "SW " > eeprom.bin;cat version_number.txt | tr '\n' ' ' >> eeprom.bin;printf "build " >> eeprom.bin;cat build_number.txt  | tr '\n' ' '>> eeprom.bin;cat build_date.txt | tr '\n' ' '>> eeprom.bin;cat newline.txt  >> eeprom.bin ;printf 'BLD Arduino compatible build ' >> eeprom.bin ;cat bootloader/build_number.txt  | tr '\n' ' '>> eeprom.bin;cat bootloader/build_date.txt | tr '\n' ' '>> eeprom.bin
 	avrdude -p ${MCU} -c atmelice_isp -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r -F -P usb -B 2
 
 reset:
