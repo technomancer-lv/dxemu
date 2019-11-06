@@ -199,7 +199,12 @@ void    CliRoutine(unsigned char CliData)
 								case 'r':
 								case 'R':
 								{
-									//TODO - check if 0 or 1 else fail
+									if((CliBuffer[2]<'0')|(CliBuffer[2]>'1'))
+									{
+										IncorrectDrive();
+										break;
+									}
+
 									UartSendString("\x0D\x0A");
 									UartSendString("Receiving RX");
 									UartTxAddByte(CliBuffer[2]);
@@ -210,33 +215,16 @@ void    CliRoutine(unsigned char CliData)
 									else
 										ActLedPort|=(1<<ActLed1Pin);
 
-									unsigned long int SectorAddr=0xC0000;
-
-									RomEraseImage(SectorAddr);
+									RomEraseImage(0xC0000);
 
 									XmodemTimeout=0;
 									UartTxAddByte(0x15);
 
-									while(1)
-									{
-										unsigned char BuffTest=UartIsBufferEmpty();
-										_delay_ms(1);
-										if(BuffTest==0)
-											break;
-
-										if(XmodemTimeout>=30)
-										{
-											XmodemTimeout=0;
-											UartTxAddByte(0x15);
-										}
-
-									}
-
 									unsigned int PreferredPacketNum=1;
-									SectorAddr=0xC0000;
+									unsigned long int SectorAddr=0xC0000;
 
-									while(1)
-									{
+								//	while(1)
+								//	{
 										unsigned char PreferredCrc=0;
 										unsigned char ReceivedBytes=0;
 
@@ -245,11 +233,23 @@ void    CliRoutine(unsigned char CliData)
 											unsigned char BuffTest=UartIsBufferEmpty();
 											_delay_us(1);
 											//TODO - get rid of these useless delays
+
+											//Sends NAK every 3 seconds if no data received
+											if(XmodemTimeout>=30)
+											{
+												XmodemTimeout=0;
+												UartTxAddByte(0x15);
+											}
+
+											//If byte received:
 											if(BuffTest==0)
 											{
+												XmodemTimeout=0;
 												unsigned char XRecByte=UartRxGetByte();
+												//Process each byte depending on its number in packet
 												switch(ReceivedBytes)
 												{
+													//Byte 0 - should be 0x01, but can be 0x03 (cancel) or 0x04 (EOT)
 													case 0:
 													{
 														switch(XRecByte)
@@ -279,7 +279,7 @@ void    CliRoutine(unsigned char CliData)
 
 														break;
 													}
-
+													//Byte1 - packet number
 													case 1:
 													{
 														if(XRecByte==(PreferredPacketNum&0xFF))
@@ -288,7 +288,7 @@ void    CliRoutine(unsigned char CliData)
 															XmodemTransferStatus=TransferOutOfSync;
 														break;
 													}
-
+													//Byte2 - 0xFF-packet number
 													case 2:
 													{
 														if(XRecByte==(255-(PreferredPacketNum&0xFF)))
@@ -297,7 +297,7 @@ void    CliRoutine(unsigned char CliData)
 															XmodemTransferStatus=TransferOutOfSync;
 														break;
 													}
-
+													//Bytes 3-131 - data bytes, stored in buffer
 													default:
 													{
 														CopyArray[ReceivedBytes-3]=XRecByte;
@@ -306,6 +306,7 @@ void    CliRoutine(unsigned char CliData)
 														break;
 													}
 
+													//Byte 131 - CRC
 													case 131:
 													{
 														if(PreferredCrc==XRecByte)
@@ -338,107 +339,34 @@ void    CliRoutine(unsigned char CliData)
 											if(XmodemTransferStatus>TransferSectorOk)
 												break;
 										}
+
+										//TODO - program crashes when file too long
+										//TODO - exit transfer gracefully
+
 										switch(XmodemTransferStatus)
 										{
 											case TransferCompleted:
 											{
-												//TODO - clear up this messed up region
-												//Erase backup region
+												RomCopyImage(0xC0000,XDriveNumber*0x80000);
 
-												unsigned long int RestoreOffset=XDriveNumber;
-												RestoreOffset=RestoreOffset*0x80000;
-
-												unsigned long int SectorAddr=0;
-
-												//Copy image, sector by sector
-												SectorAddr=0;
-
-												RomCopyImage(SectorAddr+0xC0000,SectorAddr+RestoreOffset);
-
-												//TODO - output error messages
 												UartTxAddByte(0x06);
 												_delay_ms(1000);
-												UartSendString("Done\x0D\x0A");
 												break;
 											}
-
-											case TransferTimeout:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("ERROR - TIMEOUT\x0D\x0A");
-												break;
-											}
-
-											case TransferOutOfSync:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("ERROR - INCORRECT PACKET NUMBER\x0D\x0A");
-												break;
-											}
-
-											case TransferCrcFailed:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("ERROR - CRC ERROR\x0D\x0A");
-												break;
-											}
-
-											case TransferTooShort:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("ERROR - FILE TOO SHORT\x0D\x0A");
-												break;
-											}
-
-											case TransferNoSoh:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("ERROR - INCORRECT PACKET HEADER\x0D\x0A");
-												break;
-											}
-
-											case TransferTooLong:
-											{
-												UartTxAddByte(0x15);
-												_delay_ms(1000);
-												UartSendString("ERROR - FILE TOO LONG\x0D\x0A");
-												break;
-											}
-
-											case TransferCancelled:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												UartSendString("TRANSFER CANCELLED BY USER\x0D\x0A");
-												break;
-											}
-											//TODO - remove these error messages, real solution lower
-											//TODO - program crashes when file too long
-											//TODO - exit transfer gracefully
 
 											default:
 											{
-												UartTxAddByte(' ');
-												HexSend(XmodemTransferStatus);
-												UartTxAddByte(' ');
-												UartSendString("SOMETHING FUCKED UP\x0D\x0A");
-
+												UartTxAddByte(0x06);
+												_delay_ms(1000);
 												break;
 											}
 										}
-										if(XmodemTransferStatus>TransferSectorOk)
-											break;
-									}
-
+										//TODO - merge this with that case statement higher?
+									//	if(XmodemTransferStatus>TransferSectorOk)
+									//		break;
+								//	}
 
 									ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
-									UartSendString("\x0D\x0A");
-									UartSendString(">");
 									break;
 								}
 
@@ -449,6 +377,7 @@ void    CliRoutine(unsigned char CliData)
 								}
 							}
 
+							//Prints status messages after transferring image
 							switch(XmodemTransferStatus)
 							{
 								case TransferCompleted:
@@ -508,7 +437,7 @@ void    CliRoutine(unsigned char CliData)
 									break;
 								}
 							}
-							
+
 							UartSendString("\x0D\x0A");
 							UartSendString(">");
 

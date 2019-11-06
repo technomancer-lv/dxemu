@@ -12,7 +12,7 @@ all:
 	clear
 	@if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
 	@echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
-	#@date "+%d-%m-%Y %H:%M" > build_date.txt
+	@#date "+%d-%m-%Y %H:%M" > build_date.txt
 	@date "+%d-%m-%Y" > build_date.txt
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
 	@${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
