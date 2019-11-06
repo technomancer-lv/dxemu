@@ -1,7 +1,7 @@
 Prog:
   _Xmodem for uploading/downloading disk images
+    Fully working, but needs much better error handling
   Smaller todo steps are marked in the beginning and all over program source
-  Test why bootloader is not verifying correctly (but works)
   Maybe firmware update over Xmodem? Flash capacity allows this
   _Simple statistics - sectors wrote, sectors read, system uptime, errors
   _Make automated test script for testing backup, restore and file transfer functions
