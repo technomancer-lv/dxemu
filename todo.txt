@@ -13,6 +13,3 @@ Mechanical:
 Electrical:
   Test with MC1201.01
   Test with real PDP-11 RX01 controller
-  
-Documentation:
-  Add used original PDP-11 documentation to folder "pdf"
