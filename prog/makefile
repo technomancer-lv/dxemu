@@ -32,7 +32,7 @@ reset:
 
 
 flash_bld:
-	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i
+	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r
 
 clean:
 	rm -f *.bin *.hex

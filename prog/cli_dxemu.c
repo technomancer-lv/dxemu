@@ -340,6 +340,7 @@ void    CliRoutine(unsigned char CliData)
 												break;
 										}
 
+										//TODO - retry on error
 										//TODO - program crashes when file too long
 										//TODO - exit transfer gracefully
 

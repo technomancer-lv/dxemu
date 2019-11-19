@@ -331,6 +331,7 @@ int main()
 
 	while(1)
 	{
+		//TODO - make this process edge sensitive (INT)
 		if ((DxRunIn&(1<<DxRunPin))==0)
 		{
 			if(DxCommand==NoCommand)
@@ -397,32 +398,9 @@ int main()
 
 				case 1:	//Read buffer command
 				{
-					if(SystemStatus&(1<<DebugVerbose))
-					{
-						if(DebugDiv==0)
-						{
-							UartSendString("\x0D\x0A");
-						}
-						DebugDiv++;
-						if(DebugDiv>=8)
-							DebugDiv=0;
-					}
 
 					if(DxArrayPointer<128)
 					{
-					/*	if(SystemStatus&(1<<DebugVerbose))
-						{
-							HexSend(DxArray[DxArrayPointer]);
-							UartTxAddByte(' ');
-							DebugDiv++;
-							if(DebugDiv>=8)
-							{
-								DebugDiv=0;
-								UartSendString("\x0D\x0A");
-							}
-						}*/
-
-
 						if(DxState==IdleState)
 						{
 						//TODO - merge with else
@@ -436,15 +414,42 @@ int main()
 						else
 						{
 							DxIrPort|=(1<<DxIrPin);
+						/*	if(SystemStatus&(1<<DebugVerbose))
+							{
+								HexSend(DxArray[DxArrayPointer]);
+								UartTxAddByte(' ');
+								DebugDiv++;
+								if(DebugDiv>=8)
+								{
+									DebugDiv=0;
+								}
+							}*/
 							ShiftOut(DxArray[DxArrayPointer]);
 							DxArrayPointer++;
 							DxIrPort&=~(1<<DxIrPin);
 						}
+
 					}
 					else
 					{
 						DxIrPort|=(1<<DxIrPin);
 						ExitState();
+						if(SystemStatus&(1<<DebugVerbose))
+						{
+							for(DxArrayPointer=0;DxArrayPointer<128;DxArrayPointer++)
+							{
+								HexSend(DxArray[DxArrayPointer]);
+								UartTxAddByte(' ');
+								DebugDiv++;
+								if(DebugDiv>=8)
+								{
+									DebugDiv=0;
+									UartSendString("\x0D\x0A");
+								}
+							}
+							UartSendString("\x0D\x0A");
+						}
+
 					}
 					break;
 				}
@@ -551,6 +556,7 @@ int main()
 				}
 			}
 		}
+		//TODO - make reset edge sensitive (INT)
 		if((DxSetIn&(1<<DxSetPin))==0)
 		{
 			//Fill buffer with drive 0 track 1 sector 0
@@ -600,21 +606,13 @@ unsigned char	ShiftInP(void)		//Function for shifting in commands and addresses 
 					//If there are no parity errors, parity LSB
 					//should always be 1.
 					//Parity is tested here
-//	UartSend(0x0D);
-//	UartSend(0x0A);
-//	UartSend('P');
-//	UartSend(' ');
 	if((ParityBit&1)==1)
 	{
-//		UartSend('O');		//Debug msg
-//		UartSend('K');
 		return ShiftData;
 	}
 	else
 	{
-		UartSend('E');
-		UartSend('R');
-		UartSend('R');
+		UartSendString("PARITY ERROR");
 		return 0xFF;		//Received command or track/sector address should never be
 					//0xFF, so I can use this value as an error code.
 	}
@@ -825,6 +823,7 @@ void	RomSectorWrite(unsigned long int SectorWriteAddr,unsigned char SectorWriteB
 
 }
 
+		//Function that copies floppy image between backup, working or temporary locations.
 void		RomCopyImage(unsigned long int ImageSourceAddr,unsigned long int ImageDestAddr)
 {
 	RomEraseImage(ImageDestAddr);
