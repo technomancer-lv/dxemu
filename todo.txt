@@ -1,6 +1,4 @@
 Prog:
-  _Xmodem for uploading/downloading disk images
-    Fully working, but needs much better error handling
   Smaller todo steps are marked in the beginning and all over program source
   Maybe firmware update over Xmodem? Flash capacity allows this
   _Simple statistics - sectors wrote, sectors read, system uptime, errors
@@ -13,3 +11,4 @@ Mechanical:
 Electrical:
   Test with MC1201.01
   Test with real PDP-11 RX01 controller
+  Smaller protective resistors on Tx and Rx lines to test if it fixes "programmer out of sync"
