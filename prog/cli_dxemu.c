@@ -41,17 +41,34 @@ void    CliRoutine(unsigned char CliData)
 					case 'v':
 					case 'V':
 					{
-						//Reads first 128 characters from EEPROM and prints all that is printable
-						//EEPROM contents are generated upon programming
+						//Reads serian number and bootloader version from flash
+						//Reads firmware version from flash and prints all that is printable
 						if(CliBufferPointer==1)
 						{
+							unsigned char	FlashData;
 							UartSendString("\x0D\x0A");
-							for(unsigned char EeLoop=0;EeLoop<128;EeLoop++)
+							UartSendString("SN: ");
+							for(unsigned char FlashLoop=0;FlashLoop<64;FlashLoop++)
 							{
-								EEAR=EeLoop;
-								EECR|=(1<<EERE);
-								if(EEDR<0x7F)
-									UartTxAddByte(EEDR);
+								FlashData=pgm_read_byte(0x7F40+FlashLoop);
+								if(FlashData<0x7F)
+									UartTxAddByte(FlashData);
+							}
+							UartSendString("\x0D\x0A");
+							UartSendString("BL: ");
+							for(unsigned char FlashLoop=0;FlashLoop<64;FlashLoop++)
+							{
+								FlashData=pgm_read_byte(0x7F00+FlashLoop);
+								if(FlashData<0x7F)
+									UartTxAddByte(FlashData);
+							}
+							UartSendString("\x0D\x0A");
+							UartSendString("FW: ");
+							for(unsigned char FlashLoop=0;FlashLoop<64;FlashLoop++)
+							{
+								FlashData=pgm_read_byte(0x7700+FlashLoop);
+								if(FlashData<0x7F)
+									UartTxAddByte(FlashData);
 							}
 							UartSendString("\x0D\x0A\x0D\x0A");
 							UartSendString(">");
@@ -222,150 +239,144 @@ void    CliRoutine(unsigned char CliData)
 
 									unsigned int PreferredPacketNum=1;
 									unsigned long int SectorAddr=0xC0000;
+									unsigned char PreferredCrc=0;
+									unsigned char ReceivedBytes=0;
 
-								//	while(1)
-								//	{
-										unsigned char PreferredCrc=0;
-										unsigned char ReceivedBytes=0;
+									while(1)
+									{
+										unsigned char BuffTest=UartIsBufferEmpty();
+										_delay_us(1);
+										//TODO - get rid of these useless delays
 
-										while(1)
+										//Sends NAK every 3 seconds if no data received
+										if(XmodemTimeout>=30)
 										{
-											unsigned char BuffTest=UartIsBufferEmpty();
-											_delay_us(1);
-											//TODO - get rid of these useless delays
+											XmodemTimeout=0;
+											UartTxAddByte(0x15);
+										}
 
-											//Sends NAK every 3 seconds if no data received
-											if(XmodemTimeout>=30)
+										//If byte received:
+										if(BuffTest==0)
+										{
+											XmodemTimeout=0;
+											unsigned char XRecByte=UartRxGetByte();
+											//Process each byte depending on its number in packet
+											switch(ReceivedBytes)
 											{
-												XmodemTimeout=0;
-												UartTxAddByte(0x15);
-											}
-
-											//If byte received:
-											if(BuffTest==0)
-											{
-												XmodemTimeout=0;
-												unsigned char XRecByte=UartRxGetByte();
-												//Process each byte depending on its number in packet
-												switch(ReceivedBytes)
+												//Byte 0 - should be 0x01, but can be 0x03 (cancel) or 0x04 (EOT)
+												case 0:
 												{
-													//Byte 0 - should be 0x01, but can be 0x03 (cancel) or 0x04 (EOT)
-													case 0:
+													switch(XRecByte)
 													{
-														switch(XRecByte)
+														case 0x01:
 														{
-															case 0x01:
-															{
-																ReceivedBytes++;
-																XmodemTransferStatus=TransferInProcess;
-																break;
-															}
-
-															case 0x03:
-															{
-																XmodemTransferStatus=TransferCancelled;
-																break;
-															}
-
-															case 0x04:
-															{
-																if(PreferredPacketNum<2002)
-																	XmodemTransferStatus=TransferTooShort;
-																else
-																	XmodemTransferStatus=TransferCompleted;
-																break;
-															}
+															ReceivedBytes++;
+															XmodemTransferStatus=TransferInProcess;
+															break;
 														}
 
-														break;
-													}
-													//Byte1 - packet number
-													case 1:
-													{
-														if(XRecByte==(PreferredPacketNum&0xFF))
-															ReceivedBytes++;
-														else
-															XmodemTransferStatus=TransferOutOfSync;
-														break;
-													}
-													//Byte2 - 0xFF-packet number
-													case 2:
-													{
-														if(XRecByte==(255-(PreferredPacketNum&0xFF)))
-															ReceivedBytes++;
-														else
-															XmodemTransferStatus=TransferOutOfSync;
-														break;
-													}
-													//Bytes 3-131 - data bytes, stored in buffer
-													default:
-													{
-														CopyArray[ReceivedBytes-3]=XRecByte;
-														PreferredCrc+=XRecByte;
-														ReceivedBytes++;
-														break;
-													}
-
-													//Byte 131 - CRC
-													case 131:
-													{
-														if(PreferredCrc==XRecByte)
+														case 0x03:
 														{
-															if(PreferredPacketNum>=2003)
-															{
-																UartTxAddByte(0x15);
-																XmodemTransferStatus=TransferTooLong;
-															}
+															XmodemTransferStatus=TransferCancelled;
+															break;
+														}
+
+														case 0x04:
+														{
+															if(PreferredPacketNum<2002)
+																XmodemTransferStatus=TransferTooShort;
 															else
-															{
-																RomSectorWrite(SectorAddr,0);
-																PreferredPacketNum++;
-																SectorAddr+=0x80;
-																ReceivedBytes=0;
-																XmodemTransferStatus=TransferSectorOk;
-																UartTxAddByte(0x06);
-															}
+																XmodemTransferStatus=TransferCompleted;
+															break;
+														}
+													}
+
+													break;
+												}
+												//Byte1 - packet number
+												case 1:
+												{
+													if(XRecByte==(PreferredPacketNum&0xFF))
+														ReceivedBytes++;
+													else
+														XmodemTransferStatus=TransferOutOfSync;
+													break;
+												}
+												//Byte2 - 0xFF-packet number
+												case 2:
+												{
+													if(XRecByte==(255-(PreferredPacketNum&0xFF)))
+														ReceivedBytes++;
+													else
+														XmodemTransferStatus=TransferOutOfSync;
+													break;
+												}
+												//Bytes 3-131 - data bytes, stored in buffer
+												default:
+												{
+													CopyArray[ReceivedBytes-3]=XRecByte;
+													PreferredCrc+=XRecByte;
+													ReceivedBytes++;
+													break;
+												}
+
+												//Byte 131 - CRC
+												case 131:
+												{
+													if(PreferredCrc==XRecByte)
+													{
+														if(PreferredPacketNum>=2003)
+														{
+															UartTxAddByte(0x15);
+															XmodemTransferStatus=TransferTooLong;
 														}
 														else
 														{
+															RomSectorWrite(SectorAddr,0);
+															PreferredPacketNum++;
+															SectorAddr+=0x80;
 															ReceivedBytes=0;
-															XmodemTransferStatus=TransferCrcFailed;
+															XmodemTransferStatus=TransferSectorOk;
+															UartTxAddByte(0x06);
 														}
-														PreferredCrc=0;
-														break;
 													}
+													else
+													{
+														ReceivedBytes=0;
+														XmodemTransferStatus=TransferCrcFailed;
+													}
+													PreferredCrc=0;
+													break;
 												}
 											}
-											if(XmodemTransferStatus>TransferSectorOk)
-												break;
 										}
+										if(XmodemTransferStatus>TransferSectorOk)
+											break;
+									}
 
-										//TODO - retry on error
-										//TODO - program crashes when file too long
-										//TODO - exit transfer gracefully
+									//TODO - retry on error
+									//TODO - program crashes when file too long
+									//TODO - exit transfer gracefully
 
-										switch(XmodemTransferStatus)
+									switch(XmodemTransferStatus)
+									{
+										case TransferCompleted:
 										{
-											case TransferCompleted:
-											{
-												RomCopyImage(0xC0000,XDriveNumber*0x80000);
+											RomCopyImage(0xC0000,XDriveNumber*0x80000);
 
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												break;
-											}
-
-											default:
-											{
-												UartTxAddByte(0x06);
-												_delay_ms(1000);
-												break;
-											}
+											UartTxAddByte(0x06);
+											_delay_ms(1000);
+											break;
 										}
+
+										default:
+										{
+											UartTxAddByte(0x06);
+											_delay_ms(1000);
+											break;
+										}
+									}
 										//TODO - merge this with that case statement higher?
-									//	if(XmodemTransferStatus>TransferSectorOk)
-									//		break;
-								//	}
 
 									ActLedPort&=~((1<<ActLed0Pin)|(1<<ActLed1Pin));
 									break;
@@ -537,7 +548,6 @@ void    CliRoutine(unsigned char CliData)
 					//Debug
 					//These functions are used to watch commands and data
 					//that are exchanged between computer and emulator
-					//TODO - implement debug data output in main.c
 					case 'd':
 					case 'D':
 					{

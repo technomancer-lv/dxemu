@@ -1,7 +1,6 @@
-/*	Program for emulating PDP-11 DX and maybe DY
-*	floppy disk drives
+/*	Program for emulating PDP-11 RX01 floppy disk drive
 *
-*	CPU:	ATMega328
+*	CPU:	ATMega328PB
 *	F_CLK:	14,7456MHz
 *
 *	Fuses:
@@ -15,13 +14,14 @@
 *		Parity check (in progress)
 *		Function time-outs
 *		Divide code into separate files
-*		Statistics - command type count, error count
+*		Statistics - error count
 *
 */
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 #include "avr_uart_fifo.h"
 
 //DX drive IO pin init
@@ -872,7 +872,6 @@ void HexSend(unsigned char HexChar)			//Function for transmitting debug data in 
 		UartTxAddByte(HexTemp+0x30);
 }
 
-//TODO - add variable digit length as second variable
 void	DecSend(unsigned int DecData,unsigned char DecPadding)
 {
 	unsigned char DecLeadingZero=0;

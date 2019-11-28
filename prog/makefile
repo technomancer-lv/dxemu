@@ -17,14 +17,16 @@ all:
 	${CC} ${CFLAGS} -o ${TARGET}.bin ${SRCS}
 	@${OBJCOPY} -j .text -j .data -O ihex ${TARGET}.bin ${TARGET}.hex
 	@${OBJCOPY} -j .text -j .data -O binary ${TARGET}.bin ${TARGET}.bin
+
+	#adding version and build number to firmware file
+	@cat version_number.txt | tr '\n' ' ' > temp.txt;printf "build " >> temp.txt;cat build_number.txt | tr '\n' ' ' >> temp.txt;cat build_date.txt | tr '\n' ' ' >> temp.txt;srec_cat ${TARGET}.hex -intel temp.txt -binary -offset 0x7700 -o ${TARGET}.hex -intel;rm temp.txt
+	
 	@echo
 	@echo "Build number:  "$$(cat $(BUILD_NUMBER_FILE))
 	@echo "Bin file size: "$$(ls ${TARGET}.bin -l| awk '{print $$5}')
 	@echo
 	
 flash_isp:
-	#Generating EEPROM contents
-	@printf "SW " > eeprom.bin;cat version_number.txt | tr '\n' ' ' >> eeprom.bin;printf "build " >> eeprom.bin;cat build_number.txt  | tr '\n' ' '>> eeprom.bin;cat build_date.txt | tr '\n' ' '>> eeprom.bin;cat newline.txt  >> eeprom.bin ;printf 'BLD Arduino compatible build ' >> eeprom.bin ;cat bootloader/build_number.txt  | tr '\n' ' '>> eeprom.bin;cat bootloader/build_date.txt | tr '\n' ' '>> eeprom.bin
 	avrdude -p ${MCU} -c atmelice_isp -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r -F -P usb -B 2
 
 reset:
@@ -32,7 +34,9 @@ reset:
 
 
 flash_bld:
-	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r
+	#avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r
+	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i
+
 
 clean:
 	rm -f *.bin *.hex

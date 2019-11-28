@@ -4,7 +4,8 @@ ISPTOOL	   = atmelice_isp
 #LDSECTION  = --section-start=.text=0x3800
 
 ISPFUSES    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -e -u -U lock:w:0xff:m -U efuse:w:0x$(EFUSE):m -U hfuse:w:0x$(HFUSE):m -U lfuse:w:0x$(LFUSE):m
-ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM).hex -U lock:w:0xcf:m
+#ISPFLASH    = avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM).hex -U lock:w:0xcf:m
+ISPFLASH    = printf "Arduino compatible,build " > temp.txt;cat build_number.txt | tr '\n' ' ' >> temp.txt;cat build_date.txt | tr '\n' ' ' >> temp.txt;srec_cat $(PROGRAM).hex -intel temp.txt -binary -offset 0x7F00 -o $(PROGRAM)_temp.hex -intel;rm temp.txt; srec_cat $(PROGRAM)_temp.hex -intel serial_number.txt -binary -offset 0x7F40 -o $(PROGRAM)_temp.hex -intel;avrdude -c $(ISPTOOL) -p $(MCU_TARGET) -U flash:w:$(PROGRAM)_temp.hex;rm $(PROGRAM)_temp.hex           #;echo $$(($$(cat serial_number.txt) + 1)) | tr '\n' ' ' > serial_number.txt
 
 OBJ        = $(PROGRAM).o
 OPTIMIZE   = -Os
