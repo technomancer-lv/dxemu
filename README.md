@@ -32,6 +32,9 @@ On И4 controller board, +5V should be connected to unused pin 35 with short wir
    Activity LED of drive 0 should start blinking and computer should boot RT-11.
 5. **That's it!** Enjoy Your emulated RX01 floppy drive and play some original Tetris game. Drive 1 are not initialised by default, but you can do it easily from RT-11 with command **INI DX1:** and You'll have another 256KB to store Your data.
 
+### Printer port.
+MS1201 boards have floppy and printer signals connected to same connector. As an additional function, printer connections are connected to pin header that can be used to connect dot-matrix printer with standard Centronics connection. You can use flat cable to DB-25F adaptor that's removed from old PC compatible motherboard. Connect printer to this adaptor cable and You can print text files from RT-11 with command **COP TEXT.TXT LP0:**. This function is tested with two different Epson printers and one Centronics printer.
+
 ### Built-in serial port.
 Six pin header on board is Arduino pinout compatible TTL serial port. It can be used for firmware upgrade over Arduino compatible bootloader. Also, there is simple command-line interface, that can be used to upload and download floppy images, to locally backup and restore images and also to use debug and statistics functions. Baudrate for both bootloader and CLI is 115200. Emulator can be supplied standalone from serial connection.
 
