@@ -25,10 +25,10 @@ MCU program is written on native C language, it's compiled under linux CLI. Make
 On И4 controller board, +5V should be connected to unused pin 35 with short wire. See pictures for examples (pictures to be added soon).  
 2. **Connect emulator** to prepared board. There are markings on board which side connector is for MS1201 and which for И4.
 3. **Switch on your computer.** Bootable RT-11 floppy image should be already programmed into emulator.
-4. **Give boot command:**
-    MS1201.01 - D0
-    MS1201.02 - B DX0
-    И4 - 177300G
+4. **Give boot command:**\
+    MS1201.01 - D0\
+    MS1201.02 - B DX0\
+    И4 - 177300G\
    Activity LED of drive 0 should start blinking and computer should boot RT-11.
 5. **That's it!** Enjoy Your emulated RX01 floppy drive and play some original Tetris game. Drive 1 are not initialised by default, but you can do it easily from RT-11 with command **INI DX1:** and You'll have another 256KB to store Your data.
 
@@ -53,7 +53,7 @@ d0 - disable debug\
 d1 - enable debug\
 d2 - enable verbose debug\
 v - show version\
-s - statistics\
+s - statistics
 
 #### Floppy image upload to emulator.
 Floppy images can be uploaded to emulator using Xmodem protocol. First, You need to have floppy image file with correct size - 256256 bytes. Connect serial cable, be sure that command line works and execute command **XR0** or **XR1** depending if You want to upload image of drive 0 or 1. After that, start image upload on your terminal emulator using Xmodem protocol and see if it uploads correctly. While uploading, image is copied to temporary area, so if upload fails, floppy image stays unchanged.
