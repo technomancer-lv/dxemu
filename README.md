@@ -36,21 +36,21 @@ On И4 controller board, +5V should be connected to unused pin 35 with short wir
 Six pin header on board is Arduino pinout compatible TTL serial port. It can be used for firmware upgrade over Arduino compatible bootloader. Also, there is simple command-line interface, that can be used to upload and download floppy images, to locally backup and restore images and also to use debug and statistics functions. Baudrate for both bootloader and CLI is 115200. Emulator can be supplied standalone from serial connection.
 
 ### Console commands.
-Commands are case insensitive. Available commands are:
-? (or any other unrecognised command) - help
-xs0 - send RX0 image over Xmodem
-xs1 - send RX1 image over Xmodem
-xr0 - receive RX0 image over Xmodem
-xr1 - receive RX1 image over Xmodem
-b0 - backup RX0 image
-b1 - backup RX1 image
-r0 - restore RX0 image from backup
-r1 - restore RX1 image from backup
-d0 - disable debug
-d1 - enable debug
-d2 - enable verbose debug
-v - show version
-s - statistics
+Commands are case insensitive. Available commands are:\
+? (or any other unrecognised command) - help\
+xs0 - send RX0 image over Xmodem\
+xs1 - send RX1 image over Xmodem\
+xr0 - receive RX0 image over Xmodem\
+xr1 - receive RX1 image over Xmodem\
+b0 - backup RX0 image\
+b1 - backup RX1 image\
+r0 - restore RX0 image from backup\
+r1 - restore RX1 image from backup\
+d0 - disable debug\
+d1 - enable debug\
+d2 - enable verbose debug\
+v - show version\
+s - statistics\
 
 #### Floppy image upload to emulator.
 Floppy images can be uploaded to emulator using Xmodem protocol. First, You need to have floppy image file with correct size - 256256 bytes. Connect serial cable, be sure that command line works and execute command **XR0** or **XR1** depending if You want to upload image of drive 0 or 1. After that, start image upload on your terminal emulator using Xmodem protocol and see if it uploads correctly. While uploading, image is copied to temporary area, so if upload fails, floppy image stays unchanged.
