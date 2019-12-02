@@ -1,4 +1,4 @@
-##What's this project for?
+#What's this project for?
 
 This project is small and simple replacement for dual 8" floppy drive GMD-70 (ГМД-70) used with Soviet made PDP-11 compatible computers DVK (ДВК) and Electronica-60 (Электроника-60). Emulator is tested as working with MS1201.02 (МС1201.02) board, with I4 (И4) interface board and will be tested with MS1201.01 later, and maybe even with original PDP-11 RX01 controller card if I'll ever get one.
 
