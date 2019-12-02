@@ -1,8 +1,11 @@
+Add explanatory pictures to readme.md
+
 Prog:
   Smaller todo steps are marked in the beginning and all over program source
   Maybe firmware update over Xmodem? Flash capacity allows this
   _Simple statistics - sectors wrote, sectors read, system uptime, errors
   _Make automated test script for testing backup, restore and file transfer functions
+  Add some silly command, for example, C prints out cat on console.
   
 Mechanical:
   Fix plastics part width issue
@@ -11,10 +14,11 @@ Mechanical:
 Electrical:
   Test with MC1201.01
   Test with real PDP-11 RX01 controller
-  Smaller protective resistors on Tx and Rx lines to test if it fixes "programmer out of sync"
   
 PCB:
   If there will be demand, PCB v 1.1 can be made with fixes:
-    LPT signal issue
+    LPT signal issue - connect pin2 to GND
     Two component RefDes are swapped
     PCB too wide to fit behind DVK front panel with both connectors soldered
+    Maybe remove debug connector and 12b signal
+    LPT INV can be controlled from MCU or can be removed at all
