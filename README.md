@@ -51,10 +51,20 @@ v - show version
 s - statistics
 
 Floppy image upload to emulator.
-Floppy images can be uploaded to emulator using Xmodem protocol. First, You need to have floppy image file with correct size - 256256 bytes. Connect serial cable, be sure that command line works and execute command XR0 or XR1 depending if You want to upload image of drive 0 or 1. After that, start image upload on your terminal emulator using Xmodem protocol and see if ti uploads correctly.
+Floppy images can be uploaded to emulator using Xmodem protocol. First, You need to have floppy image file with correct size - 256256 bytes. Connect serial cable, be sure that command line works and execute command XR0 or XR1 depending if You want to upload image of drive 0 or 1. After that, start image upload on your terminal emulator using Xmodem protocol and see if it uploads correctly. While uploading, image is copied to temporary area, so if upload fails, floppy image stays unchanged.
 
 Floppy image download from emulator.
 Floppy image can also be downloaded from emulator. It's started with command XS0 or XS1 and after that you should give receive command to your terminal emulator and see if it's downloading correctly.
 
 Backup and restore functions.
-Sometimes while you're messing around with old hardware, you know that You can mess things up. In this case, You can accidentally erase floppy image, bake floppy unbootable or do some other stupid things. To save you from that, there's image backup and restore commmands. If You have good working floppy image, You can execute command B0 or B1 depending on which drive you would like to backup and image of that drive will be copied to backup 
+Sometimes while you're messing around with old hardware, you know that you can mess things up. In this case, you can accidentally erase floppy image, bake floppy unbootable or do some other stupid things. To save you from that, there's image backup and restore commmands. If you have good working floppy image, you can execute command B0 or B1 depending on which drive you would like to backup and image of that drive will be copied to backup area of Flash memory. If you mess something up, anytime you can execute R0 or R1 commands to restore previous contents of corresponding floppy drive. 0 and 1 drive image backup are stored in different locations, so both drives can be backuped simultaneously.
+
+Debug.
+To see if your computer is exchanging data with floppy drive, you can use debug functions. Command D1 turns on simple debug. It shows command numbers issued by computer, together with track and sector numbers with commands that reads data from floppy or writes to it. Command D2 turns on verbose debug that also prints out data that are stored in emulator buffer or are read from it. Verbose debug mode is not recommended to be used, because of manu data that has to be send over serial line. It slows things down and caused me some other problems. Maybe this debug should be made in different way. Use on your own risk.
+Debug function is turned off with command D0.
+
+Version.
+Command V prints out serial number, bootloader version and firmware version. Firmware can be upgraded and so will change firmware number. Bootloader version and serial number are both stored in bootloader section, so these are unaffected by firmware changes.
+
+Statistics.
+Command S prints out simple statistics - board uptime, sectors read and written on both disks.
