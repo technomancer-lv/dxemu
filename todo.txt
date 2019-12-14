@@ -21,5 +21,6 @@ PCB:
     Two component RefDes are swapped
     PCB too wide to fit behind DVK front panel with both connectors soldered
     Maybe remove debug connector and 12b signal
+    Edge connector pad length can be reduced, thus making board more narrow
     LPT INV can be controlled from MCU or can be removed at all
       If two XOR IC's are replaced by two invertor IC's, one of 7407's can be removed
