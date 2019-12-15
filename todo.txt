@@ -12,7 +12,7 @@ Mechanical:
   Assign part numbers to plastic parts
   
 Electrical:
-  Test with MC1201.01
+  Test with MC1201.01 - NOT BOOTING! Fix issue and test again on other boards.
   Test with real PDP-11 RX01 controller
   
 PCB:
