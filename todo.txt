@@ -6,6 +6,7 @@ Prog:
   _Simple statistics - sectors wrote, sectors read, system uptime, errors
   _Make automated test script for testing backup, restore and file transfer functions
   Add some silly command, for example, C prints out cat on console.
+  Add drive number to sector related debug functions
   
 Mechanical:
   Fix plastics part width issue
