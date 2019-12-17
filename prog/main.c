@@ -312,7 +312,7 @@ int main()
 	UartInit(115200);
 	UartSendString("\x0D\x0A-----\x0D\x0A");
 	UartSendString("RX01 drive emulator for PDP-11 compatible computers.\x0D\x0A");
-	UartSendString("Tested with MC1201.02 and I4 boards.\x0D\x0A");
+	UartSendString("Tested with MC1201.01, MC1201.02 and I4 boards.\x0D\x0A");
 	UartSendString("Created by Technomancer\x0D\x0A");
 	UartSendString("phantom.sannata.ru");
 	_delay_ms(100);
