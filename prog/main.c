@@ -279,9 +279,6 @@ int main()
 	UCSR0C=0b00000110;	//
 	UBRR0H=0;
 	UBRR0L=15;		//115200 8N1
-//	UBRR0L=191;		//9600 8N1
-
-	
 
 	//SPI-mem init
 	SpiCePort|=(1<<SpiCePin);	//SPI CE - OUT, init high
@@ -414,16 +411,6 @@ int main()
 						else
 						{
 							DxIrPort|=(1<<DxIrPin);
-						/*	if(SystemStatus&(1<<DebugVerbose))
-							{
-								HexSend(DxArray[DxArrayPointer]);
-								UartTxAddByte(' ');
-								DebugDiv++;
-								if(DebugDiv>=8)
-								{
-									DebugDiv=0;
-								}
-							}*/
 							ShiftOut(DxArray[DxArrayPointer]);
 							DxArrayPointer++;
 							DxIrPort&=~(1<<DxIrPin);
@@ -497,6 +484,9 @@ int main()
 
 						if(SystemStatus&(1<<DebugOn))
 						{
+							UartTxAddByte('D');
+							UartTxAddByte(' ');
+							DecSend(DxDriveSelected,0);
 							UartTxAddByte('T');
 							UartTxAddByte(' ');
 							DecSend(TrackAddr,0);
@@ -528,6 +518,7 @@ int main()
 
 				case 4:	//Unused
 				{
+					ExitState();
 					break;
 				}
 
