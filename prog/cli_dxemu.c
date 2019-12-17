@@ -638,20 +638,65 @@ void    CliRoutine(unsigned char CliData)
 					{
 						if(CliBufferPointer==1)
 						{
-		        			UartSendString("\x0D\x0A");
-		        			UartSendString("                  __\x0D\x0A");
-		        			UartSendString("                  \\ \\\x0D\x0A");
-		        			UartSendString("                   \\ \\\x0D\x0A");
-		        			UartSendString("                    | |\x0D\x0A");
-		        			UartSendString("                    | |\x0D\x0A");
-		        			UartSendString("     /\\---/\\ _.---._| |\x0D\x0A");
-		        			UartSendString("    / ^  ^  \\         \\\x0D\x0A");
-		        			UartSendString("    ( O  O  )          ;\x0D\x0A");
-		        			UartSendString("     '=Y=_.'          ;\x0D\x0A");
-		        			UartSendString("      /     __;--._   \\\x0D\x0A");
-		        			UartSendString("     / _) ='     / /  /\x0D\x0A");
-		        			UartSendString("    / ;/ ;'     / / ;'\x0D\x0A");
-		        			UartSendString("   ( /( ;'    (_(__/\x0D\x0A");
+						UartSendString("\x0D\x0A");
+						UartSendString("             __\x0D\x0A");
+						UartSendString("             \\ \\\x0D\x0A");
+						UartSendString("              \\ \\\x0D\x0A");
+						UartSendString("               | |\x0D\x0A");
+						UartSendString("               | |\x0D\x0A");
+						UartSendString(" /\\---/\\_.---._| |\x0D\x0A");
+						UartSendString("/ ^  ^  \\         \\\x0D\x0A");
+						UartSendString("( 0  0  )          ;\x0D\x0A");
+						UartSendString(" '=Y=_.'          ;\x0D\x0A");
+						UartSendString("1111111111111111111\x0D\x0A");
+						UartSendString("0000000000000000000\x0D\x0A");
+						UartSendString("\x0D\x0A");
+						UartSendString("\x0D\x0A");
+		        			UartSendString(">");
+						}
+						else
+							UnknownCommand();
+						break;
+					}
+
+					case 't':
+					{
+						if(CliBufferPointer==1)
+						{
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("012\\34567\x0D\x0A");
+		        			UartSendString("012\\\\34567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("0\\1234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("01234567\x0D\x0A");
+		        			UartSendString("0123\\4567\x0D\x0A");
+		        			UartSendString("01234567\\\x0D\x0A");
+		        			UartSendString("012\\34567\x0D\x0A");
 						}
 						else
 							UnknownCommand();
