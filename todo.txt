@@ -7,6 +7,8 @@ Prog:
   _Make automated test script for testing backup, restore and file transfer functions
   Add some silly command, for example, C prints out cat on console.
   Add drive number to sector related debug functions
+  Crashes when ascii cat function added
+  Programmer out of sync - test on other computers too
   
 Mechanical:
   Fix plastics part width issue
