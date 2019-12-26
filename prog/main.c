@@ -144,6 +144,9 @@
 
 //TODO - change all mem offsets with these defines
 
+//Welcome text, saved in program memory
+unsigned char const StartupText[] PROGMEM="\r\n-----\r\nRX01 drive emulator for PDP-11 compatible computers.\r\nTested with MC1201.01, MC1201.02 and I4 boards.\r\nCreated by Technomancer\r\nphantom.sannata.ru";
+
 //Variables
 unsigned char	DxDriveSelected=0;	//Variable that holds selected drive number
 					//0 - DX0
@@ -310,11 +313,17 @@ int main()
 	ActLedDdr|=(1<<ActLed1Pin);
 
 	UartInit(115200);
-	UartSendString("\x0D\x0A-----\x0D\x0A");
-	UartSendString("RX01 drive emulator for PDP-11 compatible computers.\x0D\x0A");
-	UartSendString("Tested with MC1201.01, MC1201.02 and I4 boards.\x0D\x0A");
-	UartSendString("Created by Technomancer\x0D\x0A");
-	UartSendString("phantom.sannata.ru");
+
+	unsigned int TextPointer=&(StartupText[0]);
+	while(1)
+	{
+		unsigned char TempChar=pgm_read_byte(TextPointer);
+		if(TempChar==0)
+			break;
+		UartTxAddByte(TempChar);
+		TextPointer++;
+	}
+
 	_delay_ms(100);
 	CliInit();
 

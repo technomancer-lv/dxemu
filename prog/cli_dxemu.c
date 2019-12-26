@@ -1,3 +1,8 @@
+//TODO - change all \x0D\x0A to \r\n
+//TODO - integer without a caast warning
+unsigned char const CatText[] PROGMEM="                _\x0D\x0A                  \\ \\\x0D\x0A                   \\ \\\x0D\x0A                    | |\x0D\x0A     /\\---/\\ _.---._| |\x0D\x0A    / ^  ^  \\         \\\x0D\x0A    ( 0  0  )          ;\x0D\x0A     '=Y=_.'          ;\x0D\x0A      /     __;--._   \\\x0D\x0A     / _) ='     / /  /\x0D\x0A    / ;/ ;'     / / ;'\x0D\x0A   ( /( ;'    (_(__/\x0D\x0A\x0D\x0A>";
+unsigned char const HelpText[] PROGMEM="\r\nCommands:\r\n? - help\r\nxs0 - send RX0 image over Xmodem\r\nxs1 - send RX1 image over Xmodem\r\nxr0 - receive RX0 image over Xmodem\r\nxr1 - receive RX1 image over Xmodem\r\nb0 - backup RX0 image\r\nb1 - backup RX1 image\r\nr0 - restore RX0 image from backup\r\nr1 - restore RX1 image from backup\r\nd0 - disable debug\r\nd1 - enable debug\r\nd2 - enable verbose debug\r\nv - show version\r\ns - statistics\r\n\r\n>";
+
 //Command Line Interface functions
 
 //CLI Init - nothing really to init, simply prints
@@ -639,18 +644,15 @@ void    CliRoutine(unsigned char CliData)
 					{ 
 						if(CliBufferPointer==1)
 						{
-							UartSendString("                  _\x0D\x0A");
-							UartSendString("                  \\ \\\x0D\x0A");
-							UartSendString("                   \\ \\\x0D\x0A");
-							UartSendString("                    | |\x0D\x0A");
-							UartSendString("     /\\---/\\ _.---._| |\x0D\x0A");
-							UartSendString("    / ^  ^  \\         \\\x0D\x0A");
-							UartSendString("    ( 0  0  )          ;\x0D\x0A");
-							UartSendString("     '=Y=_.'          ;\x0D\x0A");
-							UartSendString("      /     __;--._   \\\x0D\x0A");
-							UartSendString("     / _) ='     / /  /\x0D\x0A");
-							UartSendString("    / ;/ ;'     / / ;'\x0D\x0A");
-							UartSendString("   ( /( ;'    (_(__/\x0D\x0A");
+							unsigned int TextPointer=&(CatText[0]);
+							while(1)
+							{
+								unsigned char TempChar=pgm_read_byte(TextPointer);
+								if(TempChar==0)
+									break;
+								UartTxAddByte(TempChar);
+								TextPointer++;
+							}
 							UartSendString("\x0D\x0A>");
 						}
 						else
@@ -662,23 +664,15 @@ void    CliRoutine(unsigned char CliData)
 					//If command is not recognised, prints out this help message
 					default:
 					{
-		        			UartSendString("\x0D\x0A");
-		        			UartSendString("Commands:\x0D\x0A");
-		        			UartSendString("? - help\x0D\x0A");
-		        			UartSendString("xs0 - send RX0 image over Xmodem\x0D\x0A");
-		        			UartSendString("xs1 - send RX1 image over Xmodem\x0D\x0A");
-		        			UartSendString("xr0 - receive RX0 image over Xmodem\x0D\x0A");
-		        			UartSendString("xr1 - receive RX1 image over Xmodem\x0D\x0A");
-		        			UartSendString("b0 - backup RX0 image\x0D\x0A");
-		        			UartSendString("b1 - backup RX1 image\x0D\x0A");
-		        			UartSendString("r0 - restore RX0 image from backup\x0D\x0A");
-		        			UartSendString("r1 - restore RX1 image from backup\x0D\x0A");
-		        			UartSendString("d0 - disable debug\x0D\x0A");
-		        			UartSendString("d1 - enable debug\x0D\x0A");
-		        			UartSendString("d2 - enable verbose debug\x0D\x0A");
-		        			UartSendString("v - show version\x0D\x0A");
-		        			UartSendString("s - statistics\x0D\x0A\x0D\x0A");
-						UartSendString(">");
+						unsigned int TextPointer=&(HelpText[0]);
+						while(1)
+						{
+							unsigned char TempChar=pgm_read_byte(TextPointer);
+							if(TempChar==0)
+								break;
+							UartTxAddByte(TempChar);
+							TextPointer++;
+						}
 						break;
 					}
 				}
@@ -746,3 +740,4 @@ void	IncorrectDrive(void)
 	UartSendString("INCORRECT DRIVE NUMBER\x0D\x0A\x0D\x0A");
 	UartSendString(">");
 }
+
