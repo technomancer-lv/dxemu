@@ -4,6 +4,7 @@ F_CPU=14745600
 CC=avr-gcc
 OBJCOPY=avr-objcopy
 CFLAGS=-std=c99 -Wall -g -Os -mmcu=${MCU} -DF_CPU=${F_CPU} -I.
+#CFLAGS=-std=c99 -Wall -g -O1 -mmcu=${MCU} -DF_CPU=${F_CPU} -I.
 TARGET=dxemu_m328p_latest
 SRCS=main.c
 BUILD_NUMBER_FILE=build_number.txt

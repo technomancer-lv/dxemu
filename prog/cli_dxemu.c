@@ -634,6 +634,31 @@ void    CliRoutine(unsigned char CliData)
 						//TODO - add error statistics
 					}
 
+					//Hidden cat command just for fun
+					case 'c':
+					{ 
+						if(CliBufferPointer==1)
+						{
+							UartSendString("                  _\x0D\x0A");
+							UartSendString("                  \\ \\\x0D\x0A");
+							UartSendString("                   \\ \\\x0D\x0A");
+							UartSendString("                    | |\x0D\x0A");
+							UartSendString("     /\\---/\\ _.---._| |\x0D\x0A");
+							UartSendString("    / ^  ^  \\         \\\x0D\x0A");
+							UartSendString("    ( 0  0  )          ;\x0D\x0A");
+							UartSendString("     '=Y=_.'          ;\x0D\x0A");
+							UartSendString("      /     __;--._   \\\x0D\x0A");
+							UartSendString("     / _) ='     / /  /\x0D\x0A");
+							UartSendString("    / ;/ ;'     / / ;'\x0D\x0A");
+							UartSendString("   ( /( ;'    (_(__/\x0D\x0A");
+							UartSendString("\x0D\x0A>");
+						}
+						else
+							UnknownCommand();
+						break;
+						//TODO - add error statistics
+					}
+
 					//If command is not recognised, prints out this help message
 					default:
 					{
