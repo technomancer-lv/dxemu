@@ -35,7 +35,7 @@ reset_isp:
 
 
 flash_bld:
-	#avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r
+	@#avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i -U eeprom:w:eeprom.bin:r
 	avrdude -p ${MCU} -c arduino -P /dev/ttyUSB0 -b 115200 -D -U flash:w:${TARGET}.hex:i
 
 reset_bld:

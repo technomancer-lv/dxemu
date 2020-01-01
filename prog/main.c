@@ -346,6 +346,7 @@ int main()
 				//Controller has initiated command transfer. Read command over SPI-DX.
 				DxDonePort|=(1<<DxDonePin);	//Reply with command sequence started
 				DxErrPort|=(1<<DxErrPin);	//Clears error signal
+				DxTimeout=0;
 
 				//Read command - shift in from controller
 				unsigned char CommandTemp=ShiftInP();
