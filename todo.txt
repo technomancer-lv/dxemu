@@ -2,6 +2,7 @@ Add explanatory pictures to readme.md
 Add proper Xmodem up/download instructions
 
 Prog:
+  Try to solve the restaart issue trying to find if the orphaned INT is the problem
   Smaller todo steps are marked in the beginning and all over program source
   Maybe firmware update over Xmodem? Flash capacity allows this
   _Simple statistics - sectors wrote, sectors read, system uptime, errors
